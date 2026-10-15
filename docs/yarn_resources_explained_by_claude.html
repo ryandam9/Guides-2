@@ -494,10 +494,10 @@ yarn queue -status &lt;queue&gt;
 yarn node -list -showDetails</pre>
     <p>The ResourceManager web UI shows the same data. The <b>Scheduler</b> page shows each queue with its AM limit and user limit.</p>
     <h3>See all these settings on your EMR cluster</h3>
-    <p>The script <a href="https://github.com/ryandam9/Guides/blob/master/scripts/yarn_spark_settings.py"><code>scripts/yarn_spark_settings.py</code></a> reads <code>yarn-site.xml</code>, <code>capacity-scheduler.xml</code>, <code>spark-defaults.conf</code> and <code>oozie-site.xml</code>. It shows each setting with its value, its meaning and its case. On EMR it also shows the cluster ID and the instance groups, and it reads the AM pool, the queue usage and the free memory on each node from the ResourceManager. It uses only Python 3 and changes nothing.</p>
+    <p>The script <a href="https://github.com/ryandam9/yarn-resource-config"><code>yarn_spark_settings.py</code></a> reads <code>yarn-site.xml</code>, <code>capacity-scheduler.xml</code>, <code>spark-defaults.conf</code> and <code>oozie-site.xml</code>. It shows each setting with its value, its meaning and its case. On EMR it also shows the cluster ID and the instance groups, and it reads the AM pool, the queue usage and the free memory on each node from the ResourceManager. It uses only Python 3 and changes nothing.</p>
     <p><b>Option 1: on the primary node.</b> Connect with SSM or SSH, then run:</p>
 <pre>aws ssm start-session --target &lt;primary-node-instance-id&gt;   <span class="c"># or: ssh hadoop@&lt;primary-node-dns&gt;</span>
-curl -O https://raw.githubusercontent.com/ryandam9/Guides/master/scripts/yarn_spark_settings.py
+curl -fsSLO https://github.com/ryandam9/yarn-resource-config/releases/latest/download/yarn_spark_settings.py
 python3 yarn_spark_settings.py | less</pre>
     <p>If the node has no internet access, copy the script through S3 with <code>aws s3 cp</code>.</p>
     <p><b>Option 2: as an EMR step.</b> The step runs on the primary node. Read the output in the console (<b>Steps</b>, then <b>stdout</b>) or in the step's log folder in S3.</p>

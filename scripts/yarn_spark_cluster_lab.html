@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>YARN + Spark | Interactive Cluster Lab</title>
+<style>
+:root{--navy:#14243b;--navy2:#243752;--ink:#203148;--muted:#66758a;--line:#dde5ee;--paper:#f4f7fb;--white:#fff;--teal:#0f9e89;--blue:#4487df;--amber:#e6a637;--red:#c94e58;--purple:#8966c2;--round:16px;--shadow:0 8px 30px rgba(28,50,80,.06)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper)}button,input,select{font:inherit}button{cursor:pointer}a{color:#1668b7}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #92c5ff;outline-offset:2px}.top{background:var(--navy);color:#fff;padding:18px clamp(16px,3vw,38px);display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;gap:13px;align-items:center}.brand-mark{width:44px;height:44px;border:1px solid #42617c;border-radius:14px;display:grid;place-items:center;font-size:25px;background:#203856}.brand h1{font-size:20px;line-height:1.15;margin:0;font-weight:800;letter-spacing:-.5px}.brand small{display:block;color:#aebfd3;font-size:12px;margin-top:3px}.top-actions{display:flex;gap:8px;flex-wrap:wrap}.button{border:1px solid #cbd6e2;border-radius:10px;padding:9px 13px;background:#fff;color:#243955;font-weight:700;transition:filter .15s,transform .15s}.button:hover{filter:brightness(.97)}.button:active{transform:scale(.98)}.top .button{background:#2a4160;border-color:#405a76;color:white}.top .button.primary{background:#0f9e89;border-color:#0f9e89;color:white}.button.primary{background:#147eaf;border-color:#147eaf;color:#fff}.button.small{padding:6px 9px;font-size:12px}.shell{display:grid;grid-template-columns:minmax(275px,312px) minmax(0,1fr) minmax(240px,285px);gap:18px;max-width:1780px;margin:0 auto;padding:20px}.side,.insights{min-width:0}.side .sticky,.insights .sticky{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;scrollbar-width:thin}.card{background:var(--white);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--round);padding:18px;min-width:0}.card+.card{margin-top:16px}.section-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}.section-head h2,.section-head h3{font-size:16px;margin:0;letter-spacing:-.25px}.eyebrow{color:#188a88;text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:1.4px}.desc{color:var(--muted);margin:5px 0 14px;font-size:12px}.mini{font-size:11px;color:var(--muted)}.note{font-size:12px;color:#51657c;background:#eef5fa;border-left:3px solid #7cb5de;padding:11px 12px;border-radius:7px}.preset{width:100%;border:1px solid #cad9e5;border-radius:9px;background:#fff;padding:9px 10px;color:var(--ink);margin-top:8px}.setting-group{border-bottom:1px solid var(--line);padding:11px 0}.setting-group:last-child{border:0}.setting-group summary{font-weight:800;display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:13px}.setting-group summary::-webkit-details-marker{display:none}.setting-group summary::after{content:"⌄";color:#7c8b9b}.setting-group[open] summary::after{content:"⌃"}.setting-list{display:grid;gap:12px;padding-top:15px}.field .field-label{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:12px;font-weight:700}.field .prop{display:block;font-size:10px;color:#8994a2;word-break:break-word;line-height:1.35;margin-top:3px}.field input[type=number],.field select{border:1px solid #cfd9e3;border-radius:8px;min-width:0;width:88px;padding:6px 7px;color:var(--ink);background:#fff}.field select{width:100%;margin-top:6px}.input-pair{display:flex;gap:10px;align-items:center;margin-top:7px}.input-pair input[type=range]{width:100%;min-width:0;accent-color:var(--teal)}.input-pair input[type=number]{flex:0 0 78px;width:78px}.unit{font-weight:500;font-size:11px;color:var(--muted)}.toggle{display:flex;justify-content:space-between;gap:8px;align-items:center}.toggle input{accent-color:var(--teal);width:19px;height:19px}.field .help{font-size:10px;color:#8694a3;margin-top:4px}.workspace{display:grid;align-content:start;gap:16px;min-width:0}.hero{display:flex;gap:15px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}.hero h2{margin:0;font-size:25px;letter-spacing:-.8px}.hero p{color:var(--muted);margin:3px 0 0}.status{font-size:11px;border-radius:100px;padding:5px 10px;background:#e2f6ef;color:#007f69;font-weight:800}.status.bad{background:#fff0ed;color:#c04f45}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.metric{padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:13px}.metric strong{font-size:22px;display:block;line-height:1.25;letter-spacing:-.5px;font-variant-numeric:tabular-nums}.metric span{font-size:11px;color:var(--muted)}.metric small{display:block;font-size:10px;margin-top:5px;color:#607b90}.tabs{display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid #dce4ec;padding:0 2px}.tab{padding:10px 13px;border:0;border-bottom:3px solid transparent;background:transparent;color:#6d7c90;font-weight:800}.tab.active{color:#087e8e;border-color:#0b9c91}.view[hidden]{display:none!important}.view{display:grid;gap:16px}.diagram-hub{border:1px solid #b7c9da;background:linear-gradient(130deg,#f4faff,#eaf2fa);border-radius:12px;max-width:360px;margin:2px auto 0;text-align:center;padding:12px 15px;position:relative}.diagram-hub b{display:block}.diagram-hub span{color:var(--muted);font-size:11px}.hub-wire{height:27px;width:2px;background:#b5cada;margin:auto;position:relative}.hub-wire::after{content:"";position:absolute;bottom:0;left:-4px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #b5cada}.nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.node{border:1px solid #cddce7;border-radius:13px;padding:13px;background:#fcfdff;min-width:0}.node-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.node-head b{font-size:13px}.node-head span{font-size:10px;color:#7a8b9d}.node-label{font-size:10px;color:var(--muted);margin:10px 0 5px}.track{height:13px;background:#e8eef4;border-radius:5px;overflow:hidden;display:flex}.track .seg{height:100%;transition:width .2s ease}.seg.other,.pill.other{background:var(--amber)}.seg.am,.pill.am{background:var(--teal)}.seg.exec,.pill.exec{background:var(--blue)}.seg.free{background:#e8eef4}.node-foot{display:flex;gap:4px;flex-wrap:wrap;margin-top:11px;min-height:24px}.pill{color:#fff;border-radius:5px;padding:3px 6px;font-size:10px;font-weight:800;white-space:nowrap}.pill.empty{background:#eaf1f6;color:#667e90}.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted)}.legend span{display:inline-flex;gap:5px;align-items:center}.dot{width:9px;height:9px;border-radius:3px;display:inline-block}.queue-line{margin:14px 0}.queue-label{display:flex;justify-content:space-between;gap:6px;align-items:center;margin-bottom:5px}.queue-label strong{font-size:13px}.queue-label span{font-size:11px;color:var(--muted)}.queue-rail{height:23px;position:relative;background:#ebf1f6;border-radius:7px;overflow:hidden}.queue-rail .guarantee{background:#b6e4dc;position:absolute;inset:0 auto 0 0}.queue-rail .maximum{position:absolute;top:0;bottom:0;border-right:3px dashed #edaa4c}.queue-rail .used{position:absolute;inset:4px auto 4px 0;background:var(--teal);border-radius:3px;min-width:0}.queue-rail .used.other{background:var(--amber)}.queue-rail .user{position:absolute;top:0;bottom:0;border-right:3px dotted var(--purple)}.kv{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin-top:11px;font-size:12px}.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}.results{width:100%;border-collapse:collapse;font-size:12px}.results th{text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line);padding:9px 8px}.results td{border-bottom:1px solid #edf1f5;padding:10px 8px}.results td:last-child{text-align:right}.scroller{overflow:auto}.chip{font-size:10px;border-radius:20px;padding:4px 7px;background:#e7f7f0;color:#07836d;font-weight:800}.chip.warn{background:#fff0df;color:#a86810}.chip.bad{background:#fff0ed;color:#bb4852}.issue{border:1px solid #f5d5bd;background:#fff8ef;border-radius:9px;padding:10px 12px;margin:8px 0;font-size:12px;color:#875a20}.issue.error{background:#fff1f1;border-color:#f2cbd0;color:#9e3340}.fine{color:var(--muted);font-size:11px}.event{border-left:2px solid #d2e0ec;padding:2px 0 12px 14px;margin-left:5px;position:relative;font-size:12px}.event::before{content:"";position:absolute;left:-5px;top:5px;border-radius:50%;width:8px;height:8px;background:#6e9cc3}.event strong{display:block}.event span{color:var(--muted)}.insights .card{padding:17px}.explain{margin:0;padding-left:19px;color:#54677c;font-size:12px}.explain li{margin:11px 0}.math{font-size:11px;background:#f3f7fa;border:1px solid #e1eaf1;border-radius:9px;padding:11px;word-break:break-word;color:#365269;margin:9px 0}.cmd{background:#18273e;border-radius:10px;padding:14px;color:#d6edf8;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-word;overflow:auto}.property-table{width:100%;border-collapse:collapse;font-size:11px}.property-table th,.property-table td{padding:10px 8px;text-align:left;border-bottom:1px solid #edf0f4;vertical-align:top}.property-table th{color:#526579;background:#f3f7fa;position:sticky;top:0}.property-table code{font-size:10px;word-break:break-word;color:#0c6483}.foot{text-align:center;color:#8494a6;font-size:11px;padding:7px 16px 28px}details summary{cursor:pointer}#toast{position:fixed;bottom:16px;right:16px;background:#213c56;color:white;border-radius:10px;padding:9px 14px;display:none;z-index:5}#toast.show{display:block}@media(max-width:1350px){.shell{grid-template-columns:290px minmax(0,1fr)}.insights{grid-column:2}.insights .sticky{position:static;max-height:none;display:grid;grid-template-columns:1fr 1fr;gap:14px}.insights .card+.card{margin:0}}@media(max-width:830px){.shell{display:block;padding:12px}.side .sticky,.insights .sticky{position:static;max-height:none}.workspace{margin:14px 0}.insights .sticky{display:block}.insights .card+.card{margin-top:14px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h2{font-size:22px}.top{padding:14px 16px}.top-actions .button{font-size:11px;padding:8px 9px}}@media print{.side,.top-actions,.tabs,.insights .button,.button{display:none!important}.shell{display:block}.workspace,.card{break-inside:avoid}.view[hidden]{display:none!important}body{background:#fff}}
+
+.editor{min-width:960px}.editor td{white-space:nowrap}.editor input,.editor select{border:1px solid #cad6e1;border-radius:7px;padding:6px;background:#fff;color:var(--ink);min-width:0;width:72px}.editor input[data-field=user]{width:90px}.editor select[data-field=queue]{width:160px}.editor select[data-field=label]{width:85px}.editor select[data-field=at]{width:84px}.editor td:last-child{text-align:center}.timeline-controls{display:flex;gap:12px;align-items:center}.timeline-controls input{flex:1;accent-color:var(--teal)}.queue-tree{border-left:2px solid #bed3dd;margin:7px 0 8px 10px;padding-left:15px}.node-tag{background:#ede7f9;color:#65449b;border-radius:100px;font-size:10px;font-weight:800;padding:2px 7px}
+.seg.exec.queue-analytics,.pill.exec.queue-analytics{background:#8161c4}.seg.exec.queue-engineering,.pill.exec.queue-engineering{background:#e57c56}.seg.exec.queue-finance,.pill.exec.queue-finance{background:#4487df}.node-tag{white-space:nowrap} .queue-rail .used{max-width:100%}
+</style>
+</head>
+<body>
+<header class="top">
+ <div class="brand"><div class="brand-mark" aria-hidden="true">◈</div><div><h1>YARN + Spark Cluster Lab <span style="color:#49d9bd;font-size:11px">V2</span></h1><small>Interactive resource scheduler • Hadoop 3.x / Spark 3.5</small></div></div>
+ <div class="top-actions"><button type="button" class="button" id="resetBtn">↻ Reset</button><button type="button" class="button" id="jsonBtn">↓ Export</button><button type="button" class="button" id="importBtn">↑ Import</button><input type="file" accept=".json,application/json" id="importFile" hidden><button type="button" class="button primary" id="cmdBtn">Copy spark-submit</button></div>
+</header>
+<div class="shell">
+ <aside class="side"><div class="sticky">
+  <section class="card"><span class="eyebrow">Experiment</span><h2 style="margin:3px 0 3px;font-size:17px">Choose a scenario</h2><p class="desc">Load a starting point, then change any configuration value. All results update instantly.</p><label for="scenario" class="mini">Scenario preset</label><select id="scenario" class="preset"><option value="default">Balanced cluster</option><option value="am">AM admission bottleneck</option><option value="user">Single-user limit</option><option value="oversized">Executor too large</option><option value="borrow">Borrow idle capacity</option><option value="dynamic">Dynamic executor demand</option><option value="preempt">Borrowing then preemption</option><option value="nested">Nested Analytics queues</option><option value="labels">Node-label restriction</option></select></section>
+  <section class="card" style="margin-top:14px"><div class="section-head"><h2>Configuration</h2><span class="mini">Edit live</span></div><div id="controls"></div></section>
+ </div></aside>
+ <main class="workspace">
+  <div class="hero"><div><span class="eyebrow">Visual learning workspace</span><h2>Simulate an imaginary cluster</h2><p>See how a request moves from queue admission to containers on worker nodes.</p></div><span class="status" id="health">● Ready</span></div>
+  <div class="metrics" id="metrics" aria-live="polite"></div>
+  <nav class="tabs" aria-label="Simulation views"><button class="tab active" data-view="topology">Cluster nodes</button><button class="tab" data-view="queues">Queue mathematics</button><button class="tab" data-view="workloads">Workload editor</button><button class="tab" data-view="timeline">Scheduling timeline</button><button class="tab" data-view="lifecycle">Applications</button><button class="tab" data-view="reference">Property reference</button></nav>
+  <section id="topology" class="view">
+   <div class="card"><div class="section-head"><h2>ResourceManager → NodeManagers</h2><span class="mini" id="cluster-total"></span></div><div class="diagram-hub"><b>YARN ResourceManager</b><span>Capacity Scheduler • queue admission • AM + executor allocation</span></div><div class="hub-wire"></div><div class="nodes" id="nodes"></div><div class="legend" style="margin-top:17px"><span><i class="dot" style="background:var(--teal)"></i>Application Master</span><span><i class="dot" style="background:var(--blue)"></i>Finance executor</span><span><i class="dot" style="background:#8161c4"></i>Analytics executor</span><span><i class="dot" style="background:#e57c56"></i>Engineering executor</span><span><i class="dot" style="background:var(--amber)"></i>Other queues</span><span><i class="dot" style="background:#e8eef4;border:1px solid #ccd7e2"></i>Free</span></div></div>
+   <div class="card"><div class="section-head"><h2>What YARN allocated</h2><span class="mini">Per-container resource requests</span></div><div id="container-math"></div></div>
+  </section>
+  <section id="queues" class="view" hidden>
+   <div class="card"><div class="section-head"><h2>Root queue hierarchy</h2><span class="mini">Percentage capacities relative to root</span></div><div id="queue-chart"></div><div class="note">Green fill = guaranteed share; solid green overlay = simulated usage; dashed amber line = maximum; purple dotted line = simplified per-user ceiling. Child capacities are relative to their parent queue. User limits, preemption and queue ordering are educational approximations rather than the exact Hadoop scheduler.</div></div>
+   <div class="card"><div class="section-head"><h2>Queue / user / AM calculations</h2></div><div id="queue-math"></div></div>
+  </section>
+  <section id="workloads" class="view" hidden><div class="card"><div class="section-head"><h2>Competing Spark applications</h2><button type="button" class="button small primary" id="addApp">+ Add application</button></div><p class="desc">Give each application a user, queue, resource request and arrival time. Blank overrides inherit Spark settings on the left. Changes apply immediately.</p><div class="scroller"><table class="results editor"><thead><tr><th>App</th><th>User</th><th>Queue</th><th>Executors</th><th>Heap GiB</th><th>Cores</th><th>Tasks</th><th>Submit at</th><th>Node label</th><th></th></tr></thead><tbody id="workloadRows"></tbody></table></div><p class="fine">Driver and AM resources come from the common Spark template. Executor overrides are per application. Worker labels constrain placement only; real YARN node-label partitions also use independent queue capacities.</p></div></section>
+  <section id="timeline" class="view" hidden><div class="card"><div class="section-head"><h2>Step through scheduler events</h2><span class="mini">Deterministic educational replay</span></div><div class="timeline-controls"><button type="button" class="button small" id="previousStep">← Previous</button><input id="tickSlider" type="range" min="0" max="5" step="1" value="5" aria-label="Simulation step"><button type="button" class="button small primary" id="nextStep">Next →</button></div><div id="tickLabel" class="note" style="margin:12px 0"></div><div id="tickEvents"></div><p class="fine">Preemption is demonstrated by repacking resources with a guarantee-first policy; this does not simulate container kills, cooldowns, or YARN monitoring intervals.</p></div></section>
+  <section id="lifecycle" class="view" hidden>
+   <div class="card"><div class="section-head"><h2>Spark application admission</h2><span class="mini" id="app-counter"></span></div><div class="scroller"><table class="results"><thead><tr><th>Application / user</th><th>Queue</th><th>State</th><th>AM node</th><th>Executors</th><th>Reason</th></tr></thead><tbody id="apps"></tbody></table></div></div>
+   <div class="card"><div class="section-head"><h2>Scheduling event log</h2></div><div id="events"></div></div>
+  </section>
+  <section id="reference" class="view" hidden>
+   <div class="card"><h2 style="margin-top:0">Configuration property map</h2><p class="desc">Each property is mapped to its purpose. The simulator models the common resource limits, but it does not implement the full Hadoop scheduler. Values shown are illustrative, not your cluster's defaults.</p><div class="scroller" style="max-height:660px"><table class="property-table"><thead><tr><th>Property</th><th>Purpose</th><th>Scope</th></tr></thead><tbody id="props"></tbody></table></div></div>
+   <div class="card"><h2 style="margin-top:0">Outside this simulator</h2><p class="desc">Advanced real-cluster behaviour not simulated: per-node labels and partitions, reservations, preemption timing, queue ordering and priorities, locality, rack awareness, Spark retry/failure, resource profiles, custom GPUs, app-level fairness, precise YARN user-limit equations, application attempt lifecycle, and scheduler heartbeats.</p><p class="fine">The YARN Application Master budget is a scheduler limit, not a separate queue automatically named an “Application Master Pool”. If your installation has an actual AM-named queue, that is a cluster-specific queue configuration.</p><p class="fine">Spark 3.5 config: <a href="https://spark.apache.org/docs/3.5.7/configuration.html" target="_blank" rel="noopener">Configuration</a> and <a href="https://spark.apache.org/docs/3.5.7/running-on-yarn.html" target="_blank" rel="noopener">Running on YARN</a>. Hadoop: <a href="https://hadoop.apache.org/docs/r3.3.6/hadoop-yarn/hadoop-yarn-site/CapacityScheduler.html" target="_blank" rel="noopener">Capacity Scheduler</a>.</p></div>
+  </section>
+ </main>
+ <aside class="insights"><div class="sticky">
+  <section class="card"><span class="eyebrow">Explain the result</span><h3 style="margin:5px 0 12px">Why did this happen?</h3><div id="warnings" aria-live="polite"></div><ol class="explain" id="explanation"></ol></section>
+  <section class="card"><div class="section-head"><h3>Live formula sheet</h3></div><div id="formulas"></div></section>
+  <section class="card"><div class="section-head"><h3>Generated Spark command</h3><button class="button small" id="copyInline">Copy</button></div><label for="commandApp" class="mini">Choose application</label><select class="preset" id="commandApp" style="margin:3px 0 9px"></select><pre class="cmd" id="command"></pre><p class="fine">A demonstration command, not executed against any real cluster.</p></section>
+ </div></aside>
+</div>
+<footer class="foot">Self-contained HTML • Runs offline • Simplified educational scheduler, not a replacement for YARN ResourceManager metrics or capacity-scheduler.xml validation</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+(function(){
+ var doc=document;
+ var groups=[
+ {name:"01 • Cluster hardware",fields:[
+ ["nodes","Worker nodes","",4,2,12,1,"number","Simulated number of NodeManagers."],
+ ["ram","RAM per node","GiB",64,8,256,8,"number","Physical memory, before OS reserve."],
+ ["cores","vcores per node","",16,2,64,1,"number","Physical CPUs presented to YARN."],
+ ["reserveGb","OS reserve per node","GiB",4,0,32,1,"number","Not scheduled by YARN."],
+ ["reserveCores","OS reserved vcores","",1,0,8,1,"number","Excluded from NodeManager usable resources."]]},
+ {name:"02 • YARN ResourceManager",fields:[
+ ["minMb","Minimum container memory","MiB",1024,256,8192,256,"number","yarn.scheduler.minimum-allocation-mb"],
+ ["incrementMb","Memory allocation increment","MiB",512,256,4096,256,"number","Model increment; compare Hadoop resource-type increments on your distribution."],
+ ["maxMb","Maximum container memory","MiB",49152,1024,262144,1024,"number","yarn.scheduler.maximum-allocation-mb"],
+ ["minVCores","Minimum allocation vcores","",1,1,8,1,"number","yarn.scheduler.minimum-allocation-vcores"],
+ ["maxVCores","Maximum allocation vcores","",16,1,64,1,"number","yarn.scheduler.maximum-allocation-vcores"]]},
+ {name:"03 • Capacity Scheduler queue",fields:[
+ ["queuePct","Finance guaranteed","%",40,5,90,5,"range","yarn.scheduler.capacity.root.finance.capacity"],
+ ["queueMax","Finance maximum","%",80,5,100,5,"range","yarn.scheduler.capacity.root.finance.maximum-capacity"],
+ ["otherPct","Unmanaged background usage","%",20,0,95,5,"range","Illustrative background usage; NOT a Hadoop configuration property."],
+ 
+ ["minUser","Minimum user limit","%",25,1,100,1,"range","yarn.scheduler.capacity.root.finance.minimum-user-limit-percent"],
+ ["userFactor","User limit factor","×",2,.5,5,.5,"range","yarn.scheduler.capacity.root.finance.user-limit-factor"],
+ ["amPct","Maximum AM resource","%",10,.5,50,.5,"range","yarn.scheduler.capacity.root.finance.maximum-am-resource-percent (stored as decimal, 0.10 for 10%)"],
+ ["maxParallel","Max parallel applications","",8,1,30,1,"number","yarn.scheduler.capacity.root.finance.max-parallel-apps"],
+ ["queueState","Queue state","", "RUNNING",0,0,1,"select:RUNNING,STOPPED","yarn.scheduler.capacity.root.finance.state"],
+ ["analyticsPct","Analytics guaranteed","%",35,5,90,5,"range","yarn.scheduler.capacity.root.analytics.capacity"],
+ ["analyticsMax","Analytics maximum","%",95,5,100,5,"range","yarn.scheduler.capacity.root.analytics.maximum-capacity"],
+ ["engineeringMax","Engineering maximum","%",95,5,100,5,"range","yarn.scheduler.capacity.root.engineering.maximum-capacity"],
+ ["analyticsFactor","Analytics user factor","×",3,.5,5,.5,"range","yarn.scheduler.capacity.root.analytics.user-limit-factor"],
+ ["analyticsMinUser","Analytics min user limit","%",25,1,100,1,"range","yarn.scheduler.capacity.root.analytics.minimum-user-limit-percent"],
+ ["analyticsAmPct","Analytics maximum AM budget","%",15,.5,50,.5,"range","yarn.scheduler.capacity.root.analytics.maximum-am-resource-percent"],
+ ["analyticsState","Analytics state","", "RUNNING",0,0,1,"select:RUNNING,STOPPED","yarn.scheduler.capacity.root.analytics.state"],
+ ["engineeringFactor","Engineering user factor","×",3,.5,5,.5,"range","yarn.scheduler.capacity.root.engineering.user-limit-factor"],
+ ["engineeringMinUser","Engineering min user limit","%",25,1,100,1,"range","yarn.scheduler.capacity.root.engineering.minimum-user-limit-percent"],
+ ["engineeringAmPct","Engineering maximum AM budget","%",15,.5,50,.5,"range","yarn.scheduler.capacity.root.engineering.maximum-am-resource-percent"],
+ ["engineeringState","Engineering state","", "RUNNING",0,0,1,"select:RUNNING,STOPPED","yarn.scheduler.capacity.root.engineering.state"],
+ ["nested","Nested analytics subqueues","",false,0,0,1,"toggle","Model analytics.batch and analytics.adhoc as child queues."],
+ ["childPct","Analytics batch child share","%",60,10,90,5,"range","yarn.scheduler.capacity.root.analytics.batch.capacity, relative to Analytics parent"],
+ ["preempt","Enable illustrative preemption","",false,0,0,1,"toggle","yarn.resourcemanager.scheduler.monitor.enable; educational guarantee-first repacking"],
+ ["queueOrdering","Queue app ordering","", "FAIR",0,0,1,"select:FAIR,FIFO","yarn.scheduler.capacity.root.finance.ordering-policy"],
+ ["calculator","Resource calculator","", "DOMINANT",0,0,1,"select:DOMINANT,MEMORY","yarn.scheduler.capacity.resource-calculator; model resource limits in one or both dimensions"],
+ ["gpuNodes","GPU-labelled workers","",0,0,12,1,"number","Node labels: simulated GPU worker count (not GPU device requests)."]]},
+ {name:"04 • Spark application",fields:[
+ ["deploy","Deployment mode","", "cluster",0,0,1,"select:cluster,client","spark.submit.deployMode; cluster driver in AM, client driver outside YARN."],
+ 
+ ["execGb","Executor heap","GiB",4,1,128,1,"number","spark.executor.memory"],
+ ["execCores","Cores per executor","",2,1,24,1,"number","spark.executor.cores"],
+ ["execCount","Requested executors / app","",6,0,30,1,"number","spark.executor.instances (static allocation)."],
+ ["execOver","Executor overhead","MiB",0,0,16384,128,"number","spark.executor.memoryOverhead; 0 = automatic (max(10%,384 MiB))."],
+ ["pythonMb","PySpark memory","MiB",0,0,8192,256,"number","spark.executor.pyspark.memory; 0 = not explicitly configured."],
+ ["offHeapGb","Off-heap memory","GiB",0,0,32,1,"number","spark.memory.offHeap.size when enabled."],
+ ["driverGb","Driver heap","GiB",2,1,64,1,"number","spark.driver.memory; used by cluster-mode AM."],
+ ["driverCores","Driver cores","",1,1,16,1,"number","spark.driver.cores; cluster mode."],
+ ["driverOver","Driver overhead","MiB",0,0,16384,128,"number","spark.driver.memoryOverhead; 0 = auto."],
+ ["amMb","Client-mode AM memory","MiB",512,256,16384,256,"number","spark.yarn.am.memory; only client mode."],
+ ["amCores","Client-mode AM vcores","",1,1,16,1,"number","spark.yarn.am.cores; only client mode."],
+ ["dyn","Dynamic allocation","",false,0,0,1,"toggle","spark.dynamicAllocation.enabled; simple workload-based target in this model."],
+ ["dynMin","Dynamic min executors","",1,0,30,1,"number","spark.dynamicAllocation.minExecutors"],
+ ["dynInit","Dynamic initial executors","",2,0,30,1,"number","spark.dynamicAllocation.initialExecutors"],
+ ["dynMax","Dynamic max executors","",20,1,40,1,"number","spark.dynamicAllocation.maxExecutors"],
+ ["dynRatio","Dynamic allocation ratio","×",1,.25,1,.25,"range","spark.dynamicAllocation.executorAllocationRatio"],
+ ["taskCpus","CPU cores per task","",1,1,8,1,"number","spark.task.cpus; influences how many concurrent tasks each executor can run"],
+ ["shuffleTracking","Shuffle tracking","",true,0,0,1,"toggle","spark.dynamicAllocation.shuffleTracking.enabled; requires a supported shuffle preservation mechanism when disabled"],
+ ["tasks","Runnable tasks / app","",28,0,240,4,"number","Illustrative workload pressure, not a YARN configuration property."]]}
+ ];
+ var defaults={};groups.forEach(function(g){g.fields.forEach(function(f){defaults[f[0]]=f[3];});});
+ var presets={
+ "default":{otherPct:0},
+ "am":{amPct:.5,driverGb:4,driverOver:0,otherPct:0},
+ "user":{execCount:12,userFactor:.5,otherPct:0},
+ "oversized":{execGb:72,maxMb:49152,execCount:3,otherPct:0},
+ "borrow":{queuePct:30,queueMax:95,userFactor:5,amPct:30,execCount:12,otherPct:0},
+ "dynamic":{dyn:true,dynMin:1,dynInit:2,dynMax:20,tasks:80,execGb:6,otherPct:0},
+ "preempt":{queuePct:30,analyticsPct:45,queueMax:95,analyticsMax:95,engineeringMax:100,amPct:30,analyticsFactor:4,engineeringFactor:4,otherPct:0,preempt:true,maxParallel:10},
+ "nested":{queuePct:30,analyticsPct:50,childPct:60,nested:true,amPct:30,maxParallel:10,otherPct:0},
+ "labels":{gpuNodes:1,otherPct:0,analyticsFactor:4,amPct:20}
+ };
+ var state=Object.assign({},defaults), last=null, currentView="topology";
+ function byId(id){return doc.getElementById(id);}
+ function escape(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+ function fmt(n,d){return Number(n).toLocaleString("en-AU",{maximumFractionDigits:d===undefined?1:d});}
+ function gb(mb){return fmt(mb/1024,1)+" GiB";}
+ function pct(n){return fmt(n,1)+"%";}
+ function lim(n,min,max){return Math.min(max,Math.max(min,n));}
+ function selected(key){return groups.some(function(g){return g.fields.some(function(f){return f[0]===key;});});}
+ function buildControls(){
+  byId("controls").innerHTML=groups.map(function(g,i){
+   return '<details class="setting-group" '+(i<3?'open':'')+'><summary>'+escape(g.name)+'</summary><div class="setting-list">'+g.fields.map(function(f){
+    var key=f[0],v=state[key],mode=f[7],label=escape(f[1]),help=escape(f[8]);
+    if(mode==="toggle")return '<div class="field"><label class="toggle"><span>'+label+'<span class="prop">'+help+'</span></span><input type="checkbox" data-key="'+key+'" '+(v?"checked":"")+'></label></div>';
+    if(mode.indexOf("select:")===0) return '<div class="field"><label class="field-label" for="f-'+key+'">'+label+'</label><select id="f-'+key+'" data-key="'+key+'">'+mode.slice(7).split(",").map(function(x){return '<option '+(v===x?"selected":"")+'>'+escape(x)+'</option>';}).join("")+'</select><span class="prop">'+help+'</span></div>';
+    return '<div class="field"><label class="field-label" for="f-'+key+'"><span>'+label+'</span><span class="unit">'+escape(f[2])+'</span></label><div class="input-pair">'+(mode==="range"?'<input type="range" id="f-'+key+'" data-key="'+key+'" min="'+f[4]+'" max="'+f[5]+'" step="'+f[6]+'" value="'+v+'">':'')+'<input type="number" '+(mode!=="range"?'id="f-'+key+'"':'')+' data-key="'+key+'" min="'+f[4]+'" max="'+f[5]+'" step="'+f[6]+'" value="'+v+'"></div><span class="prop">'+help+'</span></div>';
+   }).join("")+'</div></details>';
+  }).join("");
+ }
+ byId("controls").addEventListener("input",function(e){
+  var el=e.target,key=el.dataset.key;if(!key||!selected(key))return;
+  var f=null;groups.forEach(function(g){g.fields.forEach(function(x){if(x[0]===key)f=x;});});
+  if(el.type==="checkbox")state[key]=el.checked;
+  else if(el.tagName==="SELECT")state[key]=el.value;
+  else {if(el.value.trim()==="")return;var num=Number(el.value);if(!Number.isFinite(num))return;state[key]=lim(num,f[4],f[5]);}
+  byId("controls").querySelectorAll('[data-key="'+key+'"]').forEach(function(inp){if(inp!==el){if(inp.type==="checkbox")inp.checked=state[key];else inp.value=state[key];}});
+  render();
+ });
+ byId("controls").addEventListener("change",function(e){
+  var key=e.target.dataset.key;if(!key||e.target.type!=="number")return;
+  e.target.value=state[key];render();
+ });
+ function req(mem,cores,s){
+  var raw=Math.max(s.minMb,mem),inc=s.incrementMb;
+  return {mem:Math.ceil((raw-s.minMb)/inc)*inc+s.minMb, cores:Math.max(s.minVCores,Math.ceil(cores)),rawMem:mem,rawCores:cores};
+ }
+ function overhead(mem,custom){return custom>0?custom:Math.max(384,Math.ceil(mem*.10));}
+
+ var workloads=[], step=5, nextApp=10, currentScenario="default";
+ function work(id,user,queue,count,mem,cores,tasks,at,label){
+  return {id:id,user:user,queue:queue,count:count||0,mem:mem||0,cores:cores||0,tasks:tasks||0,at:at||0,label:label||"any"};
+ }
+ function workloadPreset(name,s){
+  var sets={
+   "default":[work("app-001","ravi","finance"),work("app-002","maya","finance",4),work("app-003","ana","analytics",5),work("app-004","lee","engineering",5)],
+   "am":[work("app-001","ravi","finance"),work("app-002","ravi","finance"),work("app-003","ravi","finance"),work("app-004","ravi","finance"),work("app-005","ravi","finance")],
+   "user":[work("app-001","ravi","finance",25),work("app-002","ravi","finance",25),work("app-003","maya","finance",25)],
+   "oversized":[work("app-001","ravi","finance",3)],
+   "borrow":[work("app-001","ravi","finance",24),work("app-002","ravi","finance",18)],
+   "dynamic":[work("app-001","ravi","finance")],
+   "preempt":[work("app-001","ana","analytics",38,4,2,0,0),work("app-002","ravi","finance",18,4,2,0,4),work("app-003","lee","engineering",10,4,2,0,4)],
+   "nested":[work("app-001","ana","analytics.batch",12),work("app-002","sara","analytics.adhoc",10),work("app-003","ravi","finance",8),work("app-004","lee","engineering",4)],
+   "labels":[work("app-001","ravi","finance",12,0,0,0,0,"gpu"),work("app-002","ana","analytics",8,0,0,0,0,"default")]
+  };
+  return (sets[name]||sets.default).map(function(x){return Object.assign({},x);});
+ }
+ function simulate(s,items,phase){
+  items=items||workloads;phase=phase===undefined?step:phase;
+  var errors=[],notices=[],events=[],nodes=[],root={},queueNames=["finance","analytics","engineering"],apps=[];
+  var nodeMb=Math.max(0,(s.ram-s.reserveGb)*1024),nodeC=Math.max(0,s.cores-s.reserveCores);
+  var totalMb=nodeMb*s.nodes,totalC=nodeC*s.nodes;
+  var engPct=100-s.queuePct-s.analyticsPct;
+  var fPct=s.queuePct/100,aPct=s.analyticsPct/100,ePct=engPct/100;
+  var fact=s.calculator==="DOMINANT";
+  if(engPct<=0)errors.push("Finance and Analytics guarantees must leave a positive Engineering guarantee. The root children must total 100%.");
+  if(s.queueMax<s.queuePct)errors.push("Finance maximum capacity must be at least Finance guaranteed capacity.");
+  if(s.analyticsMax<s.analyticsPct)errors.push("Analytics maximum capacity must be at least Analytics guaranteed capacity.");
+  if(s.engineeringMax<engPct)errors.push("Engineering maximum capacity must be at least Engineering guaranteed capacity.");
+  if(s.reserveGb>=s.ram||s.reserveCores>=s.cores)errors.push("OS reserves leave no usable NodeManager resources.");
+  if(s.maxMb<s.minMb||s.maxVCores<s.minVCores||s.incrementMb>s.maxMb)errors.push("The YARN minimum, increment, and maximum allocations must be consistent.");
+  if(s.dyn&&(s.dynMin>s.dynInit||s.dynInit>s.dynMax))errors.push("Dynamic allocation requires min <= initial <= max.");
+  if(s.gpuNodes>s.nodes)errors.push("GPU-labelled worker count cannot exceed the number of nodes.");
+  if(items.length>30)errors.push("This educational simulator supports a maximum of 30 applications.");
+  function queue(id,g,max,factor,minUser,amPct,parent){
+   return {id:id,g:g,max:max,factor:factor,minUser:minUser,amPct:amPct,parent:parent||null,
+    users:{},usedMb:0,usedC:0,amMb:0,amC:0,active:0,activeAm:0,appNames:[],status:id==="finance"?s.queueState:id.indexOf("analytics")===0?s.analyticsState:s.engineeringState};
+  }
+  var finance=queue("finance",fPct,s.queueMax/100,s.userFactor,s.minUser,s.amPct),
+      analytics=queue("analytics",aPct,s.analyticsMax/100,s.analyticsFactor,s.analyticsMinUser,s.analyticsAmPct),
+      engineering=queue("engineering",ePct,s.engineeringMax/100,s.engineeringFactor,s.engineeringMinUser,s.engineeringAmPct);
+  root={finance:finance,analytics:analytics,engineering:engineering};
+  var leafs=s.nested?{
+   finance:finance,
+   "analytics.batch":queue("analytics.batch",aPct*s.childPct/100,s.analyticsMax/100,s.analyticsFactor,s.analyticsMinUser,s.analyticsAmPct,analytics),
+   "analytics.adhoc":queue("analytics.adhoc",aPct*(1-s.childPct/100),s.analyticsMax/100,s.analyticsFactor,s.analyticsMinUser,s.analyticsAmPct,analytics),
+   engineering:engineering
+  }:{finance:finance,analytics:analytics,engineering:engineering};
+  if(s.nested){leafs["analytics.batch"].max=analytics.max;
+   leafs["analytics.adhoc"].max=analytics.max;
+  }
+  var basePct=lim(s.otherPct,0,100);
+  if(basePct>0)notices.push("Unmanaged background load is physical occupancy only, not part of the three modelled queue totals.");
+  if(s.nested)notices.push("Analytics children use parent-relative guarantees; queue hierarchy limits are enforced on their aggregate allocations.");
+  if(s.gpuNodes)notices.push("Labels restrict eligible nodes only. Real YARN label partitions additionally have partition-specific queue capacity rules.");
+  for(var i=0;i<s.nodes;i++){
+   var bgMb=Math.floor(nodeMb*basePct/100),bgC=Math.floor(nodeC*basePct/100),tag=i<s.gpuNodes?"gpu":"default";
+   nodes.push({id:i+1,label:tag,capMb:nodeMb,capC:nodeC,freeMb:nodeMb-bgMb,freeC:nodeC-bgC,
+    containers:bgMb||bgC?[{type:"other",mem:bgMb,cores:bgC,name:"Baseline / unmanaged",queue:"baseline"}]:[]});
+  }
+  function normalizeQueue(q){if(!s.nested&&q.indexOf("analytics.")===0)return "analytics";
+   if(s.nested&&q==="analytics")return "analytics.batch";return q;}
+  var rawExec=s.execGb*1024+overhead(s.execGb*1024,s.execOver)+s.pythonMb+s.offHeapGb*1024;
+  var rawAM=s.deploy==="cluster"?s.driverGb*1024+overhead(s.driverGb*1024,s.driverOver):s.amMb+overhead(s.amMb,0);
+  var defaultAM=req(rawAM,s.deploy==="cluster"?s.driverCores:s.amCores,s);
+  var phases=["Submitted", "AM admission", "Initial containers","Executor demand", "Late submissions", "Preemption / reschedule"];
+  var stage=lim(phase,0,5);
+  items.forEach(function(w,i){
+   var qid=normalizeQueue(w.queue),q=leafs[qid],mem=(w.mem>0?w.mem:s.execGb),cores=(w.cores>0?w.cores:s.execCores);
+   var rawMem=mem*1024+overhead(mem*1024,s.execOver)+s.pythonMb+s.offHeapGb*1024;
+   var ex=req(rawMem,cores,s);
+   var slots=Math.max(1,Math.floor(cores/s.taskCpus));
+   var desired=s.dyn?lim(Math.max(s.dynInit,Math.ceil((w.tasks||s.tasks)*s.dynRatio/slots)),s.dynMin,s.dynMax):(w.count||s.execCount);
+   var app={id:w.id,user:(w.user||"anonymous").trim()||"anonymous",queue:qid,q:q,ex:ex,am:defaultAM,desired:desired,target:stage===2?Math.min(desired,s.dyn?s.dynInit:desired):desired,
+    at:Number(w.at)||0,label:w.label||"any",placed:0,host:0,state:"SUBMITTED",reason:"",atIndex:i};
+   if(!q){errors.push("Unknown target queue "+qid+" for "+w.id);return;}
+   if(app.at<=stage){
+    q.users[app.user]=q.users[app.user]||{mb:0,c:0};
+    q.appNames.push(app.id);
+   }
+   apps.push(app);
+  });
+  Object.values(leafs).forEach(function(q){q.active=Math.max(1,Object.keys(q.users).length);});
+  var amCount=0,execCount=0,usedMb=0,usedC=0,usedAmMb=0,usedAmC=0;
+  function limitFor(q){
+   var share=Math.max(q.minUser/100,1/q.active);
+   return Math.min(q.max,q.g*share*q.factor);
+  }
+  function nodeFor(r,label){
+   var candidates=nodes.filter(function(n){return n.freeMb>=r.mem&&n.freeC>=r.cores&&(label==="any"||n.label===label);});
+   candidates.sort(function(a,b){return (b.freeMb/(b.capMb||1)+b.freeC/(b.capC||1))-(a.freeMb/(a.capMb||1)+a.freeC/(a.capC||1))||a.id-b.id;});
+   return candidates[0]||null;
+  }
+  function causes(app,r,isAM,tight){
+   var q=app.q;if(!q)return "Unknown queue";
+   var desiredLabel=isAM?"any":app.label;
+   if(r.mem>s.maxMb||r.cores>s.maxVCores)return "Container exceeds YARN maximum allocation.";
+   if(r.mem>nodeMb||r.cores>nodeC)return "Container is too large for any worker.";
+   if(q.status!=="RUNNING"||(q.parent&&q.parent.status!=="RUNNING"))return "Queue or its parent is STOPPED; new apps cannot start.";
+   if(!nodes.some(function(n){return (desiredLabel==="any"||desiredLabel===n.label)&&n.capMb>=r.mem&&n.capC>=r.cores;}))
+    return "No eligible worker matches the label and container size.";
+   if(isAM&&((q.amMb+r.mem>totalMb*q.g*q.amPct/100+1e-8)||(fact&&q.amC+r.cores>totalC*q.g*q.amPct/100+1e-8)))
+    return "Maximum AM resource percent reached (simplified budget).";
+   if(isAM&&q.parent&&(q.parent.amMb+r.mem>totalMb*q.parent.g*q.parent.amPct/100+1e-8||(fact&&q.parent.amC+r.cores>totalC*q.parent.g*q.parent.amPct/100+1e-8)))return "Parent Analytics AM budget reached.";
+   var max=tight&&tight[q.id]!==undefined?tight[q.id]:q.max;
+   if(q.usedMb+r.mem>totalMb*max+1e-8||(fact&&q.usedC+r.cores>totalC*max+1e-8))return "Queue maximum / guarantee-first ceiling reached.";
+   if(q.parent){
+    var p=q.parent,pm=tight&&tight[p.id]!==undefined?tight[p.id]:p.max;
+    if(p.usedMb+r.mem>totalMb*pm+1e-8||(fact&&p.usedC+r.cores>totalC*pm+1e-8))return "Parent Analytics queue maximum reached.";
+   }
+   var u=q.users[app.user]||{mb:0,c:0},uf=limitFor(q);
+   if(u.mb+r.mem>totalMb*uf+1e-8||(fact&&u.c+r.cores>totalC*uf+1e-8))return "Per-user limit reached (approximate formula).";
+   if(!nodeFor(r,desiredLabel))return "Node memory/vcores or label placement unavailable.";
+   return "";
+  }
+  function place(app,r,type){
+   var n=nodeFor(r,type==="am"?"any":app.label);if(!n)return false;
+   n.freeMb-=r.mem;n.freeC-=r.cores;
+   n.containers.push({type:type,mem:r.mem,cores:r.cores,name:(type==="am"?"AM ":"E ")+app.id,queue:app.queue,app:app.id});
+   var q=app.q,u=q.users[app.user];q.usedMb+=r.mem;q.usedC+=r.cores;
+   if(q.parent){q.parent.usedMb+=r.mem;q.parent.usedC+=r.cores;}
+   u.mb+=r.mem;u.c+=r.cores;usedMb+=r.mem;usedC+=r.cores;
+   if(type==="am"){q.amMb+=r.mem;q.amC+=r.cores;if(q.parent){q.parent.amMb+=r.mem;q.parent.amC+=r.cores;}usedAmMb+=r.mem;usedAmC+=r.cores;app.host=n.id;app.state="RUNNING";amCount++;q.activeAm++;}
+   else {app.placed++;execCount++;}
+   return true;
+  }
+  function roundRobinExec(active,tight){
+   var loops=0,progress=true;
+   while(progress&&loops++<300){progress=false;
+    var list=active.filter(function(a){return a.state==="RUNNING"&&a.placed<a.target;});
+    if(s.queueOrdering==="FIFO")list.sort(function(a,b){return a.atIndex-b.atIndex;});
+    else list.sort(function(a,b){
+     var au=a.q.users[a.user]||{mb:0},bu=b.q.users[b.user]||{mb:0};
+     var ar=au.mb/(totalMb*a.q.g||1),br=bu.mb/(totalMb*b.q.g||1);
+     return ar-br||a.atIndex-b.atIndex;
+    });
+    list.forEach(function(a){var reason=causes(a,a.ex,false,tight);if(!reason){place(a,a.ex,"exec");progress=true;}else a.reason=reason;});
+   }
+  }
+  function admit(available,tight){
+   available.forEach(function(app){
+    if(app.state!=="SUBMITTED")return;
+    if(app.q.activeAm>=(app.queue==="finance"?s.maxParallel:10)){app.state="ACCEPTED";app.reason="Leaf queue max-parallel-apps reached";return;}
+    var reason=causes(app,app.am,true,tight);
+    if(reason){app.state="ACCEPTED";app.reason=reason;}
+    else {place(app,app.am,"am");events.push({title:app.id+" AM started",description:app.user+" • "+app.queue+" • worker-"+app.host});}
+   });
+  }
+  function run(tight,phaseNow){
+   // One fresh deterministic placement replay per simulation call.
+   nodes.forEach(function(n){var base=n.containers.filter(function(x){return x.type==="other";});n.containers=base;
+    var usedM=base.reduce(function(x,c){return x+c.mem;},0),usedCores=base.reduce(function(x,c){return x+c.cores;},0);
+    n.freeMb=n.capMb-usedM;n.freeC=n.capC-usedCores;});
+   Object.values(leafs).forEach(function(q){q.usedMb=0;q.usedC=0;q.amMb=0;q.amC=0;q.activeAm=0;
+    Object.keys(q.users).forEach(function(k){q.users[k].mb=0;q.users[k].c=0;});});
+   if(s.nested){analytics.usedMb=0;analytics.usedC=0;analytics.amMb=0;analytics.amC=0;}
+   amCount=0;execCount=0;usedMb=0;usedC=0;usedAmMb=0;usedAmC=0;
+   events.length=0;
+   apps.forEach(function(a){a.state=a.at<=phaseNow?"SUBMITTED":"NOT SUBMITTED";a.placed=0;a.host=0;a.reason="";
+    a.target=phaseNow===2?Math.min(a.desired,s.dyn?s.dynInit:a.desired):a.desired;});
+   if(phaseNow===0)return;
+   var early=apps.filter(function(a){return a.at===0&&a.at<=phaseNow;});
+   admit(early,tight);
+   if(phaseNow>=2)roundRobinExec(early,tight);
+   if(phaseNow>=4){
+    var late=apps.filter(function(a){return a.at>0&&a.at<=phaseNow;});
+    admit(late,tight);
+    roundRobinExec(apps.filter(function(a){return a.at<=phaseNow;}),tight);
+   }
+  }
+  if(!errors.length)run(null,stage);
+  var baseline={amCount:amCount,execCount:execCount,byQueue:{}};
+  Object.values(leafs).forEach(function(q){baseline.byQueue[q.id]=q.usedMb;});
+  var reclaimed=0,preemptionNote="";
+  if(!errors.length&&stage===5&&s.preempt){
+   var underDemand=Object.values(leafs).some(function(q){return q.usedMb<q.g*totalMb-1e-8&&apps.some(function(a){return a.q===q&&a.at<=stage&&((a.state==="ACCEPTED")||(a.state==="RUNNING"&&a.placed<a.target));});});
+   if(underDemand){
+    var tight={};Object.values(leafs).forEach(function(q){if(q.usedMb>q.g*totalMb+1e-8)tight[q.id]=q.g;});
+    if(s.nested&&analytics.usedMb>analytics.g*totalMb+1e-8)tight.analytics=analytics.g;
+    if(Object.keys(tight).length){
+     var previous=apps.map(function(a){return {id:a.id,placed:a.placed};});
+     run(tight,stage);
+     reclaimed=previous.reduce(function(sum,x){var cur=apps.find(function(a){return a.id===x.id;});return sum+Math.max(0,x.placed-(cur?cur.placed:0));},0);
+     preemptionNote="Guarantee-first repacking model: "+reclaimed+" executor allocations reclaimed; available capacity was reconsidered for under-guaranteed queues.";
+     events.unshift({title:"Preemption policy preview",description:preemptionNote});
+    }else preemptionNote="No queue is borrowing above its guarantee; nothing eligible to reclaim.";
+   }else preemptionNote="No under-guaranteed queue with unmet container demand; no illustrative preemption.";
+  }
+  if(s.dyn)notices.push("Dynamic allocation uses task slots and executorAllocationRatio, but the timeline does not implement Spark executor idle timeouts or exponential backlog ramp-up.");
+  if(s.dyn&&!s.shuffleTracking)notices.push("Dynamic allocation requires another supported shuffle preservation mechanism when shuffle tracking is disabled.");
+  if(s.deploy==="client")notices.push("Client mode: the Spark driver is external to YARN; the YARN AM uses spark.yarn.am.* resources.");
+  if(s.preempt)notices.push("YARN preemption is more complex than this guarantee-first repacking demonstration.");
+  if(s.calculator==="MEMORY")notices.push("Queue and user percentages are memory-only; per-node vcore constraints still apply.");
+  if(!events.length)events.push({title:"Scheduler phase: "+phases[stage],description:stage===0?"Apps submitted. Advance to request Application Masters.":"No containers could be admitted; inspect diagnostics."});
+  apps.forEach(function(a){if(a.state==="RUNNING"&&a.placed<a.target&&stage>=2)events.push({title:a.id+" pending executors",description:(a.target-a.placed)+" pending • "+a.reason});
+   else if(a.state==="ACCEPTED")events.push({title:a.id+" ACCEPTED",description:a.reason});});
+  var usedQueuePct=Object.values(leafs).reduce(function(sum,q){return sum+q.usedMb;},0)/(totalMb||1);
+  return {s:s,items:items,phase:stage,phases:phases,nodes:nodes,apps:apps,events:events,errors:errors,notices:notices,
+   totalMb:totalMb,totalC:totalC,nodeMb:nodeMb,nodeC:nodeC,root:root,leafs:leafs,engPct:engPct,
+   qGuaranteed:fPct,qMaximum:s.queueMax/100,userShare:Math.max(s.minUser/100,1/finance.active),
+   userCeiling:limitFor(finance),allowedMb:totalMb*limitFor(finance),allowedC:totalC*limitFor(finance),
+   amCeilingMb:totalMb*finance.g*finance.amPct/100,amCeilingC:totalC*finance.g*finance.amPct/100,
+   bgTotalMb:nodes.reduce(function(sum,n){return sum+n.containers.filter(function(c){return c.type==="other";}).reduce(function(x,c){return x+c.mem;},0);},0),
+   bgTotalC:nodes.reduce(function(sum,n){return sum+n.containers.filter(function(c){return c.type==="other";}).reduce(function(x,c){return x+c.cores;},0);},0),
+   exec:req(rawExec,s.execCores,s),am:defaultAM,execRaw:rawExec,amRaw:rawAM,target:s.execCount,
+   usedMb:usedMb,usedC:usedC,usedAmMb:usedAmMb,usedAmC:usedAmC,execPlaced:execCount,amPlaced:amCount,reclaimed:reclaimed,preemptionNote:preemptionNote,usedQueuePct:usedQueuePct};
+ }
+
+ function renderMetrics(r){
+  var totalUsed=r.bgTotalMb+r.usedMb,pc=r.totalMb?totalUsed/r.totalMb*100:0;
+  var ready=r.apps.filter(function(a){return a.at<=r.phase;}),wanted=ready.reduce(function(n,a){return n+a.target;},0);
+  var items=[
+   ["YARN memory",gb(totalUsed)+" / "+gb(r.totalMb),pct(pc)+" allocated (including baseline)"],
+   ["vcores",fmt(r.bgTotalC+r.usedC,0)+" / "+fmt(r.totalC,0),"memory / vcore placement"],
+   ["AMs started",r.amPlaced+" / "+ready.length,"accepted "+ready.filter(function(a){return a.state==="ACCEPTED";}).length],
+   ["Executors placed",r.execPlaced+" / "+wanted,"reclaimed in step 5: "+r.reclaimed]
+  ];
+  byId("metrics").innerHTML=items.map(function(x){return '<div class="metric"><span>'+x[0]+'</span><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div>';}).join("");
+  var problems=r.errors.length+ready.filter(function(a){return a.state==="ACCEPTED"||(r.phase>=2&&a.state==="RUNNING"&&a.placed<a.target);}).length;
+  byId("health").textContent=problems?"● Resource constraints":"● Phase "+r.phase+" • simulated";
+  byId("health").className="status"+(problems?" bad":"");
+ }
+ function renderNodes(r){
+  byId("cluster-total").textContent=r.s.nodes+" workers • "+gb(r.totalMb)+" YARN memory • "+r.totalC+" vcores";
+  byId("nodes").innerHTML=r.nodes.map(function(n){
+   var memUsed=n.capMb-n.freeMb,cUsed=n.capC-n.freeC;
+   var seg=n.containers.map(function(x){var width=n.capMb?x.mem/n.capMb*100:0;return '<span class="seg '+x.type+' queue-'+escape((x.queue||"baseline").split(".")[0])+'" title="'+escape(x.name)+" • "+escape(x.queue)+" • "+gb(x.mem)+'" style="width:'+width+'%"></span>';}).join("");
+   var chips=n.containers.filter(function(x){return x.type!=="other";}).map(function(x){return '<span class="pill '+x.type+' queue-'+escape((x.queue||"baseline").split(".")[0])+'" title="'+escape(x.queue)+" • "+gb(x.mem)+" • "+x.cores+' vcores">'+escape(x.name)+'</span>';}).join("");
+   return '<div class="node"><div class="node-head"><b>▣ worker-'+String(n.id).padStart(2,"0")+'</b><span>NodeManager • <span class="node-tag">'+escape(n.label)+'</span></span></div><div class="node-label">Memory '+gb(memUsed)+" / "+gb(n.capMb)+'</div><div class="track">'+seg+'</div><div class="node-label">vcores '+fmt(cUsed,0)+" / "+n.capC+'</div><div class="track"><span class="seg other" style="width:'+(n.capC?(n.containers.filter(function(x){return x.type==="other";}).reduce(function(a,x){return a+x.cores;},0)/n.capC*100):0)+'%"></span><span class="seg am" style="width:'+(n.capC?(n.containers.filter(function(x){return x.type==="am";}).reduce(function(a,x){return a+x.cores;},0)/n.capC*100):0)+'%"></span><span class="seg exec" style="width:'+(n.capC?(n.containers.filter(function(x){return x.type==="exec";}).reduce(function(a,x){return a+x.cores;},0)/n.capC*100):0)+'%"></span></div><div class="node-foot">'+(chips||'<span class="pill empty">No Spark containers</span>')+'</div></div>';
+  }).join("");
+  byId("container-math").innerHTML='<div class="kv"><dt>Executor raw request</dt><dd>'+gb(r.execRaw)+'</dd><dt>Executor YARN container</dt><dd>'+gb(r.exec.mem)+" • "+r.exec.cores+' vcores</dd><dt>Application Master raw request</dt><dd>'+gb(r.amRaw)+'</dd><dt>Application Master container</dt><dd>'+gb(r.am.mem)+" • "+r.am.cores+' vcores</dd><dt>Desired executors per app</dt><dd>'+r.target+'</dd><dt>Memory rounding</dt><dd>min '+r.s.minMb+' MiB / increment '+r.s.incrementMb+' MiB</dd></div><p class="fine">Executor request = heap + overhead + explicitly configured PySpark memory + off-heap memory. Driver/AM containers are separate from executor containers. Memory requests are rounded using the educational increment model.</p>';
+ }
+ function queueBar(label,cap,max,used,usr){
+  return '<div class="queue-line"><div class="queue-label"><strong>'+escape(label)+'</strong><span>'+pct(cap*100)+' guaranteed • '+pct(max*100)+' max</span></div><div class="queue-rail"><div class="guarantee" style="width:'+cap*100+'%"></div><div class="used '+(label==="Finance"?"":"other")+'" style="width:'+lim(used*100,0,100)+'%"></div><div class="maximum" style="left:'+max*100+'%"></div>'+(usr===null?"":'<div class="user" style="left:'+usr*100+'%"></div>')+'</div></div>';
+ }
+
+ function renderQueue(r){
+  var roots=Object.values(r.root), s=r.s;
+  byId("queue-chart").innerHTML=roots.map(function(q){
+   var html=queueBar(q.id.charAt(0).toUpperCase()+q.id.slice(1),q.g,q.max,q.usedMb/(r.totalMb||1),
+    Math.min(q.max,q.g*Math.max(q.minUser/100,1/Math.max(1,q.active))*q.factor));
+   if(q.id==="analytics"&&s.nested){
+    html+='<div class="queue-tree">'+["analytics.batch","analytics.adhoc"].map(function(k){
+     var child=r.leafs[k];return queueBar(k,child.g,child.max,child.usedMb/(r.totalMb||1),
+      Math.min(child.max,child.g*Math.max(child.minUser/100,1/child.active)*child.factor));
+    }).join("")+'</div>';
+   }return html;
+  }).join("");
+  byId("queue-math").innerHTML='<div class="scroller"><table class="results"><thead><tr><th>Queue</th><th>Guarantee</th><th>Maximum</th><th>Used</th><th>AM budget</th></tr></thead><tbody>'+
+  Object.values(r.leafs).map(function(q){return '<tr><td>'+escape(q.id)+'</td><td>'+pct(q.g*100)+" / "+gb(q.g*r.totalMb)+'</td><td>'+pct(q.max*100)+'</td><td>'+pct(q.usedMb/(r.totalMb||1)*100)+'</td><td>'+gb(q.g*r.totalMb*q.amPct/100)+'</td></tr>';}).join("")+'</tbody></table></div>'+
+  '<div class="note" style="margin-top:15px">A guarantee is not a fixed reservation. Maximum capacity is relative to the parent; the nested child guarantees multiply by Analytics parent capacity. User-limit-factor multiplies an approximate share of queue capacity. Real user scheduling and AM admission can differ from these teaching calculations.</div>';
+ }
+ function renderApps(r){
+  var live=r.apps.filter(function(a){return a.at<=r.phase;});
+  byId("app-counter").textContent=r.amPlaced+" running / "+live.length+" arrived • "+r.reclaimed+" exec reclaimed";
+  byId("apps").innerHTML=r.apps.map(function(a){
+   return '<tr><td><b>'+escape(a.id)+'</b><div class="mini">'+escape(a.user)+'</div></td><td>'+escape(a.queue)+'</td><td><span class="chip '+(a.state==="ACCEPTED"?"warn":"")+'">'+escape(a.state)+'</span></td><td>'+(a.host?"worker-"+a.host:"–")+'</td><td>'+a.placed+" / "+a.target+'</td><td>'+escape(a.reason||"–")+'</td></tr>';
+  }).join("");
+  byId("events").innerHTML=r.events.map(function(e){return '<div class="event"><strong>'+escape(e.title)+'</strong><span>'+escape(e.description)+'</span></div>';}).join("");
+ }
+ function renderWorkloads(r){
+  var choices=Object.keys(r.leafs);
+  function opt(list,current){return list.map(function(x){return '<option value="'+escape(x[0])+'" '+(String(current)===String(x[0])?"selected":"")+'>'+escape(x[1])+'</option>';}).join("");}
+  function number(w,key,min,max,placeholder){
+   return '<input type="number" data-field="'+key+'" min="'+min+'" max="'+max+'" value="'+(w[key]||"")+'" placeholder="'+placeholder+'" aria-label="'+escape(key)+" of "+escape(w.id)+'">';
+  }
+  byId("workloadRows").innerHTML=workloads.map(function(w,i){
+   var q=choices.includes(w.queue)?w.queue:(state.nested&&w.queue==="analytics"?"analytics.batch":!state.nested&&w.queue.startsWith("analytics.")?"analytics":w.queue);
+   return '<tr data-index="'+i+'"><td><b>'+escape(w.id)+'</b></td><td><input type="text" maxlength="32" data-field="user" value="'+escape(w.user)+'" aria-label="User '+escape(w.id)+'"></td>'+
+   '<td><select data-field="queue">'+opt(choices.map(function(v){return [v,v];}),q)+'</select></td>'+
+   '<td>'+number(w,"count",0,60,"default")+'</td><td>'+number(w,"mem",0,128,"default")+'</td><td>'+number(w,"cores",0,24,"default")+'</td>'+
+   '<td>'+number(w,"tasks",0,300,"global")+'</td><td><select data-field="at">'+opt([[0,"Initial"],[4,"Late (4)"]],w.at)+'</select></td>'+
+   '<td><select data-field="label">'+opt([["any","Any"],["default","Default"],["gpu","GPU"]],w.label)+'</select></td>'+
+   '<td><button type="button" class="button small" data-remove="'+i+'" aria-label="Remove '+escape(w.id)+'">✕</button></td></tr>';
+  }).join("");
+ }
+ function renderTimeline(r){
+  byId("tickSlider").value=r.phase;
+  byId("tickLabel").innerHTML='<b>Step '+r.phase+' — '+escape(r.phases[r.phase])+'</b><div>'+[
+   "Applications are submitted but containers are not yet admitted.",
+   "AM admission decisions: queue max, user limits and AM budgets are checked.",
+   "Allocate initial executor targets for the applications already running.",
+   "Scale initial application executor demand against remaining memory and vcores.",
+   "Late applications arrive and compete with existing resource users.",
+   "If preemption is enabled and a queue has unmet guaranteed demand, replay with a guarantee-first ceiling."
+  ][r.phase]+'</div>';
+  byId("tickEvents").innerHTML=r.events.map(function(e){return '<div class="event"><strong>'+escape(e.title)+'</strong><span>'+escape(e.description)+'</span></div>';}).join("");
+ }
+ function renderInsights(r){
+  var warnings=r.errors.map(function(x){return '<div class="issue error">'+escape(x)+'</div>';});
+  var reasons=[...new Set(r.apps.filter(function(a){return a.state==="ACCEPTED"||(r.phase>=2&&a.state==="RUNNING"&&a.placed<a.target);}).map(function(a){return a.reason;}).filter(Boolean))];
+  reasons.forEach(function(x){warnings.push('<div class="issue">'+escape(x)+'</div>');});
+  r.notices.forEach(function(x){warnings.push('<div class="note" style="margin-bottom:9px">'+escape(x)+'</div>');});
+  if(!warnings.length)warnings.push('<div class="note">No resource constraints at this phase of the simulation.</div>');
+  byId("warnings").innerHTML=warnings.join("");
+  var points=[
+   'Usable YARN resources: '+gb(r.totalMb)+' memory and '+r.totalC+' vcores across '+r.s.nodes+' nodes.',
+   'Root queue shares: Finance '+pct(r.s.queuePct)+', Analytics '+pct(r.s.analyticsPct)+', Engineering '+pct(r.engPct)+'.',
+   'The Workload editor has '+workloads.length+' applications from '+(new Set(workloads.map(function(w){return w.user;}))).size+' users.',
+   'Application Masters admitted: '+r.amPlaced+'. Executor containers placed: '+r.execPlaced+'.',
+   'Queue ordering is '+r.s.queueOrdering+', the resource calculator model is '+r.s.calculator+'.',
+   r.preemptionNote||'Use the Scheduling timeline to introduce later applications, then preview the effect of preemption.',
+   'User limit = min(queue max, guarantee × max(min-user-limit-percent, 1 / distinct users) × user-limit-factor). This is a deliberately simplified educational approximation.'
+  ];
+  byId("explanation").innerHTML=points.map(function(x){return '<li>'+escape(x)+'</li>';}).join("");
+  byId("formulas").innerHTML=Object.values(r.root).map(function(q){
+   return '<div class="math"><b>'+escape(q.id)+'</b><div>Guarantee: '+pct(q.g*100)+' = '+gb(q.g*r.totalMb)+'</div><div>Maximum: '+pct(q.max*100)+' = '+gb(q.max*r.totalMb)+'</div><div>Allocated: '+gb(q.usedMb)+' / '+fmt(q.usedC,0)+' vcores</div><div>AM budget: '+gb(q.g*r.totalMb*q.amPct/100)+'</div></div>';
+  }).join("")+'<p class="fine">All diagrams and calculations represent a deterministic teaching model, not an exact CapacityScheduler trace. Physical node packing is constrained by both resources and labels.</p>';
+ }
+ function command(s,w){w=w||{queue:"finance",mem:0,cores:0,count:0,label:"any"};
+  var opts=['spark-submit','  --master yarn','  --deploy-mode '+s.deploy,'  --queue '+(s.nested&&w.queue==='analytics'?'analytics.batch':w.queue),
+   '  --driver-memory '+s.driverGb+'g','  --driver-cores '+s.driverCores,
+   '  --executor-memory '+(w.mem||s.execGb)+'g','  --executor-cores '+(w.cores||s.execCores)];
+  if(s.dyn){
+   opts.push('  --conf spark.dynamicAllocation.enabled=true');
+   opts.push('  --conf spark.dynamicAllocation.minExecutors='+s.dynMin);
+   opts.push('  --conf spark.dynamicAllocation.initialExecutors='+s.dynInit);
+   opts.push('  --conf spark.dynamicAllocation.maxExecutors='+s.dynMax);
+   opts.push('  --conf spark.dynamicAllocation.executorAllocationRatio='+s.dynRatio);
+   opts.push('  --conf spark.dynamicAllocation.shuffleTracking.enabled='+s.shuffleTracking);
+  }else opts.push('  --num-executors '+(w.count||s.execCount));
+  if(s.taskCpus!==1)opts.push('  --conf spark.task.cpus='+s.taskCpus);
+  if(s.execOver>0)opts.push('  --conf spark.executor.memoryOverhead='+s.execOver);
+  if(s.driverOver>0)opts.push('  --conf spark.driver.memoryOverhead='+s.driverOver);
+  if(s.pythonMb>0)opts.push('  --conf spark.executor.pyspark.memory='+s.pythonMb);
+  if(s.offHeapGb>0){opts.push('  --conf spark.memory.offHeap.enabled=true');opts.push('  --conf spark.memory.offHeap.size='+s.offHeapGb+'g');}
+  if(s.deploy==="client"){opts.push('  --conf spark.yarn.am.memory='+s.amMb+'m');opts.push('  --conf spark.yarn.am.cores='+s.amCores);}
+  if(w.label&&w.label!=='any')opts.push('  --conf spark.yarn.executor.nodeLabelExpression='+w.label);
+  opts.push('  my_job.py');return opts.join(' \\\n');
+ }
+ function renderProperties(){
+  var scope=["Cluster","YARN","Capacity Scheduler","Spark"], rows=[];
+  groups.forEach(function(g,i){g.fields.forEach(function(f){var m=f[8].match(/(?:yarn|spark)\.[a-zA-Z0-9_.-]+/),prop=m?m[0]:"simulator."+f[0];rows.push('<tr><td><code>'+escape(prop)+'</code></td><td>'+escape(f[1])+'</td><td>'+scope[i]+'</td></tr>');});});
+  var extras=[
+  ["yarn.scheduler.capacity.root.queues","Define top-level child queues"],
+  ["yarn.scheduler.capacity.root.finance.maximum-applications","Maximum submitted apps"],
+  ["yarn.scheduler.capacity.root.finance.ordering-policy","Application ordering policy"],
+  ["yarn.resourcemanager.scheduler.class","Select scheduling implementation"],
+  ["yarn.nodemanager.resource.memory-mb","Actual memory offered by a NodeManager"],
+  ["yarn.nodemanager.resource.cpu-vcores","Actual vcores offered by a NodeManager"],
+  ["yarn.scheduler.capacity.root.finance.disable_preemption","Queue preemption behaviour"],
+  ["spark.executor.memoryOverheadFactor","Automatic memory overhead fraction"],
+  ["spark.driver.memoryOverheadFactor","Automatic driver overhead fraction"],
+  ["spark.dynamicAllocation.executorIdleTimeout","Executor idle timeout"],
+  ["spark.dynamicAllocation.schedulerBacklogTimeout","Backlog-based scaling trigger"],
+  ["spark.sql.shuffle.partitions","SQL shuffle partitions (not container allocation)"],
+  ["spark.memory.fraction","Unified memory fraction inside an executor"],
+  ["spark.memory.storageFraction","Protected storage fraction within Spark memory"],
+  ["spark.locality.wait","Scheduling locality preference"],
+  ["spark.task.cpus","CPU cores allocated to one task"],
+  ["spark.speculation","Speculative execution"],
+  ["spark.yarn.executor.nodeLabelExpression","Executor node label constraint"]
+  ];
+  extras.forEach(function(p){rows.push('<tr><td><code>'+escape(p[0])+'</code></td><td>'+escape(p[1])+' <span class="chip warn">Reference only</span></td><td>Advanced</td></tr>');});
+  byId("props").innerHTML=rows.join("");
+ }
+ function render(){
+  var r=simulate(state,workloads,step);last=r;
+  renderMetrics(r);renderNodes(r);renderQueue(r);renderApps(r);renderWorkloads(r);renderTimeline(r);renderInsights(r);
+  var old=byId("commandApp").value;
+  byId("commandApp").innerHTML=workloads.map(function(w){return '<option value="'+escape(w.id)+'" '+(w.id===old?"selected":"")+'>'+escape(w.id+" • "+w.queue+" • "+w.user)+'</option>';}).join("");
+  byId("command").textContent=command(state,workloads.find(function(w){return w.id===byId("commandApp").value;})||workloads[0]);
+ }
+ function scenario(id){currentScenario=id;state=Object.assign({},defaults,presets[id]||{});workloads=workloadPreset(id,state);step=id==="preempt"?4:5;buildControls();render();}
+ function toast(x){var el=byId("toast");el.textContent=x;el.className="show";setTimeout(function(){el.className="";},2200);}
+ function copyCmd(){var value=command(state,workloads.find(function(w){return w.id===byId("commandApp").value;})||workloads[0]);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(value).then(function(){toast("Spark command copied");},function(){fallbackCopy(value);});}else fallbackCopy(value);}
+ function fallbackCopy(x){var area=doc.createElement("textarea");area.value=x;doc.body.appendChild(area);area.select();var ok=doc.execCommand("copy");area.remove();toast(ok?"Spark command copied":"Clipboard unavailable; select the command to copy.");}
+ byId("scenario").addEventListener("change",function(e){scenario(e.target.value);});
+ byId("resetBtn").addEventListener("click",function(){byId("scenario").value="default";scenario("default");toast("Defaults restored");});
+ byId("cmdBtn").addEventListener("click",copyCmd);byId("copyInline").addEventListener("click",copyCmd);
+ byId("jsonBtn").addEventListener("click",function(){
+  var data={schemaVersion:2,title:"YARN + Spark Cluster Lab",note:"Educational scenario only; verify settings against the target Hadoop/Spark distribution.",configuration:state,workloads:workloads,step:step,results:{amStarted:last.amPlaced,executorsPlaced:last.execPlaced,containers:last.nodes.map(function(n){return {node:n.id,containers:n.containers};})}};
+  var file=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(file),a=doc.createElement("a");a.href=url;a.download="yarn-spark-lab-config.json";doc.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+ });
+
+ byId("workloadRows").addEventListener("change",function(e){
+  var el=e.target,row=el.closest("tr[data-index]");if(!row||!el.dataset.field)return;
+  var i=Number(row.dataset.index),field=el.dataset.field,w=workloads[i];if(!w)return;
+  if(["user","queue","label"].includes(field))w[field]=(el.value.trim()||"anonymous").slice(0,32);
+  else w[field]=Number(el.value)||0;
+  if(["count","mem","cores","tasks"].includes(field))w[field]=lim(w[field],0,field==="tasks"?300:field==="cores"?24:field==="mem"?128:60);
+  if(field==="at")w.at=el.value==="4"?4:0;
+  render();
+ });
+ byId("workloadRows").addEventListener("click",function(e){
+  var button=e.target.closest("[data-remove]");if(!button)return;
+  workloads.splice(Number(button.dataset.remove),1);render();
+ });
+ byId("addApp").addEventListener("click",function(){
+  if(workloads.length>=30){toast("Maximum 30 apps");return;}
+  var n=String(++nextApp).padStart(3,"0"),q="finance";
+  workloads.push(work("app-"+n,"user"+n,q,0,0,0,0,0,"any"));
+  render();
+ });
+ byId("commandApp").addEventListener("change",function(){
+  byId("command").textContent=command(state,workloads.find(function(w){return w.id===byId("commandApp").value;})||workloads[0]);
+ });
+ byId("tickSlider").addEventListener("input",function(e){step=Number(e.target.value);render();});
+ byId("previousStep").addEventListener("click",function(){step=Math.max(0,step-1);render();});
+ byId("nextStep").addEventListener("click",function(){step=Math.min(5,step+1);render();});
+ byId("importBtn").addEventListener("click",function(){byId("importFile").click();});
+ byId("importFile").addEventListener("change",function(e){
+  var file=e.target.files&&e.target.files[0];if(!file)return;
+  var reader=new FileReader();reader.onload=function(){
+   try{
+    var data=JSON.parse(String(reader.result));
+    if(!data||!data.configuration||!Array.isArray(data.workloads)||data.workloads.length>30)throw Error("Expected V2 exported configuration");
+    var fresh=Object.assign({},defaults);
+    groups.forEach(function(g){g.fields.forEach(function(f){
+     var key=f[0],v=data.configuration[key];
+     if(v===undefined)return;
+     if(f[7]==="toggle")fresh[key]=!!v;
+     else if(f[7].indexOf("select:")===0){if(f[7].slice(7).split(",").includes(v))fresh[key]=v;}
+     else if(typeof v==="number"&&Number.isFinite(v))fresh[key]=lim(v,f[4],f[5]);
+    });});
+    state=fresh;
+    workloads=data.workloads.map(function(w,i){
+     return work(String(w.id||("app-"+i)).slice(0,24),String(w.user||"anonymous").slice(0,32),
+       String(w.queue||"finance"),lim(Number(w.count)||0,0,60),lim(Number(w.mem)||0,0,128),
+       lim(Number(w.cores)||0,0,24),lim(Number(w.tasks)||0,0,300),w.at===4?4:0,["any","default","gpu"].includes(w.label)?w.label:"any");
+    });
+    step=lim(Number(data.step)||0,0,5);byId("scenario").value="default";buildControls();render();toast("Configuration imported");
+   }catch(error){toast("Invalid configuration: "+error.message);}
+  };reader.readAsText(file);e.target.value="";
+ });
+ doc.querySelectorAll(".tab").forEach(function(tab){tab.addEventListener("click",function(){
+  currentView=tab.dataset.view;doc.querySelectorAll(".tab").forEach(function(t){t.classList.toggle("active",t===tab);});
+  doc.querySelectorAll(".view").forEach(function(v){v.hidden=v.id!==currentView;});
+ });});
+ renderProperties();scenario("default");
+})();
+</script>
+</body>
+</html>

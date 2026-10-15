@@ -1,0 +1,36 @@
+name: YARN Spark Cluster Lab
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/yarn_spark_cluster_lab.html'
+      - 'scripts/tests/yarn_spark_cluster_lab.test.cjs'
+      - 'scripts/tests/yarn_spark_browser_smoke.sh'
+      - '.github/workflows/yarn-spark-cluster-lab.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/yarn_spark_cluster_lab.html'
+      - 'scripts/tests/yarn_spark_cluster_lab.test.cjs'
+      - 'scripts/tests/yarn_spark_browser_smoke.sh'
+      - '.github/workflows/yarn-spark-cluster-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run offline HTML simulation regression tests
+        run: node --test scripts/tests/yarn_spark_cluster_lab.test.cjs
+      - name: Check desktop and mobile rendering in headless Chrome
+        run: bash scripts/tests/yarn_spark_browser_smoke.sh

@@ -1,0 +1,34 @@
+name: Validate Guides homepage
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'index.md'
+      - '_config.yml'
+      - 'scripts/tests/pages_index.test.cjs'
+      - '.github/workflows/pages-index.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'index.html'
+      - 'index.md'
+      - '_config.yml'
+      - 'scripts/tests/pages_index.test.cjs'
+      - '.github/workflows/pages-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  homepage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate published homepage navigation
+        run: node --test scripts/tests/pages_index.test.cjs

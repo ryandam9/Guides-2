@@ -1,0 +1,6 @@
+title: Guides
+description: Technical guides and reference notes.
+exclude:
+  - tests/
+  - scripts/tests/
+  - index.md

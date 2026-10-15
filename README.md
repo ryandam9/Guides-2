@@ -1,7 +1,3 @@
----
-title: Guides
----
-
 # Guides
 
 Technical guides and reference notes.

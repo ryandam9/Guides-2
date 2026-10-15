@@ -12,6 +12,7 @@ Technical guides and reference notes.
 - [Debugging Apache Oozie workflows on Amazon EMR](docs/oozie-emr-debugging.md)
 - [Why your Spark app gets no YARN resources (interactive)](docs/yarn_resources_explained_by_claude.html)
 - [YARN + Spark Cluster Lab (interactive simulator)](scripts/yarn_spark_cluster_lab.html)
+- [yarn-resource-config: a report of why a Spark app gets no YARN resources](https://github.com/ryandam9/yarn-resource-config) (the `yarn_spark_settings.py` script, now in its own repo)
 - [AWS SSM Session Manager explained (interactive)](docs/aws_ssm_explained_by_claude.html)
 - [AWS SSM Session Manager explained by GPT (interactive)](docs/aws_ssm_explained_by_gpt.html)
 

@@ -1,0 +1,6 @@
+title: Guides
+description: Technical guides and reference notes.
+exclude:
+  - CLAUDE.md
+  - tests/
+  - scripts/tests/

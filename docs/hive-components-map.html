@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Hive Components Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column. Header, interactive diagram with a step player, glossary grid, address table. */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --fg:#15202b; --muted:#566473; --line:#a3afbb; --rule:#dde3e9;
+  --accent:#d39200; --accent-ink:#875c00; --accent-soft:#fdf1d6;
+  --spark:#2e6bd3; --spark-ink:#1f4f9f; --spark-soft:#e3ecfb;
+  --on-accent:#1b1400; --on-spark:#ffffff;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#172029; --fg:#e5ebf0; --muted:#94a3b1; --line:#4d5b69; --rule:#26323d;
+  --accent:#f1b42f; --accent-ink:#f5c661; --accent-soft:#3a2d0e;
+  --spark:#6aa0ff; --spark-ink:#93bbff; --spark-soft:#16284a; --on-accent:#1b1400; --on-spark:#0b1424; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#172029; --fg:#e5ebf0; --muted:#94a3b1; --line:#4d5b69; --rule:#26323d;
+  --accent:#f1b42f; --accent-ink:#f5c661; --accent-soft:#3a2d0e;
+  --spark:#6aa0ff; --spark-ink:#93bbff; --spark-soft:#16284a; --on-accent:#1b1400; --on-spark:#0b1424; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body)}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:36px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:600}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+.lede{max-width:64ch;color:var(--muted);margin:10px 0 0}
+code,.mono{font-family:var(--mono);font-size:.88em}
+header{display:flex;flex-direction:column;gap:6px}
+.about{margin-top:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;max-width:72ch;display:flex;flex-direction:column;gap:4px}
+.about h2{font-size:13px;font-family:var(--mono);font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.about p{margin:0}
+
+/* Diagram panel */
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.tab{font:600 14px var(--display);letter-spacing:.01em;border:1px solid var(--rule);background:transparent;color:var(--muted);
+  padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tab .dot{width:10px;height:10px;border-radius:50%}
+.tab[data-path="A"] .dot{background:var(--accent)} .tab[data-path="B"] .dot{background:var(--spark)}
+.tab[aria-selected="true"]{color:var(--fg);border-color:var(--fg)}
+.tab:focus-visible,.btn:focus-visible,.node:focus-visible,.term:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.hint{margin-left:auto;align-self:center;font-size:13px;color:var(--muted)}
+.svgbox{overflow-x:auto;padding:12px 8px 4px}
+svg{display:block;width:100%;min-width:720px;height:auto}
+
+.node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:fill .25s,stroke .25s,opacity .25s}
+.node .t{font:600 16px var(--display);fill:var(--fg)}
+.node .s{font:400 11px var(--mono);fill:var(--muted)}
+.node{cursor:pointer;transition:opacity .25s}
+.node:hover rect{stroke:var(--fg)}
+.node.dim{opacity:.32}
+.node.seen rect{stroke:var(--hot);stroke-width:2}
+.node.now rect{fill:var(--hot-soft);stroke:var(--hot);stroke-width:3}
+.group{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:5 5;opacity:.8}
+.glabel{font:600 12px var(--mono);letter-spacing:.08em;fill:var(--accent-ink);cursor:pointer}
+.edge{fill:none;stroke:var(--line);stroke-width:1.6;transition:stroke .25s,opacity .25s}
+.edge.dim{opacity:.25}
+.edge.seen{stroke:var(--hot);stroke-width:2.4}
+.edge.now{stroke:var(--hot);stroke-width:3;stroke-dasharray:8 6;animation:flow .7s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.mk{fill:var(--line)} .mk-on{fill:var(--hot)}
+.el{font:500 11px var(--mono);fill:var(--muted);paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round}
+.el.term{cursor:pointer;fill:var(--fg);text-decoration:underline dotted}
+.el.dim{opacity:.3}
+
+.player{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:16px;border-top:1px solid var(--rule);background:var(--hot-soft)}
+.player > div{min-width:0}
+.count{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--hot-ink)}
+.stext{margin:4px 0 0;font-size:16px;max-width:70ch}
+.ctrls{display:flex;gap:8px}
+.btn{font:600 14px var(--display);padding:9px 16px;border-radius:6px;cursor:pointer;border:1px solid var(--hot);background:var(--surface);color:var(--fg)}
+.btn.primary{background:var(--hot);color:var(--on-hot);border-color:var(--hot)}
+.btn:disabled{opacity:.4;cursor:default}
+.panel{--hot:var(--accent);--hot-soft:var(--accent-soft);--hot-ink:var(--accent-ink);--on-hot:var(--on-accent)}
+.panel.b{--hot:var(--spark);--hot-soft:var(--spark-soft);--hot-ink:var(--spark-ink);--on-hot:var(--on-spark)}
+@media (max-width:560px){.player{grid-template-columns:1fr}.hint{display:none}}
+
+/* Glossary */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:border-color .3s,box-shadow .3s;scroll-margin-top:20px}
+.card.flash{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.card h3{font:600 19px var(--display);margin:0}
+#c-hive{grid-column:1/-1}
+.kind{font:500 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.card p{margin:0}
+.card ul{margin:0;padding-left:18px}
+.addr{margin-top:auto;padding-top:8px;border-top:1px solid var(--rule);font:12.5px var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.addr b{color:var(--fg);font-weight:500}
+
+/* Address table */
+.tbox{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-family:var(--mono);font-size:13px;white-space:nowrap}
+table.settings{min-width:820px}
+.settings td.v{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+.settings tr.grp td{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);background:var(--bg);white-space:normal}
+.rules{display:flex;flex-direction:column;gap:6px;margin:14px 0 0;padding-left:20px}
+section{display:flex;flex-direction:column;gap:14px}
+.code{position:relative;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+.code pre{margin:0;padding:18px 18px 18px;overflow-x:auto;font:13.5px/1.7 var(--mono);color:var(--fg)}
+.code .c{color:var(--muted)}
+.code .k{color:var(--accent-ink)}
+.code .s2{color:var(--spark-ink)}
+.copy{position:absolute;top:10px;right:10px;font:600 12px var(--display);padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--fg);cursor:pointer}
+.copy:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.out{display:flex;flex-direction:column;gap:6px;margin:0;padding-left:20px}
+@media (prefers-reduced-motion:reduce){.edge.now{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Spark · Hive · Oozie</span>
+    <h1>Who talks to whom in Hive</h1>
+    <div class="about">
+      <h2>About</h2>
+      <p>This page shows the parts of Hive and how they connect. It shows two paths. In Path A, an Oozie hive2 action uses Beeline and HiveServer2 to run a query. In Path B, Spark connects directly to the Metastore service and reads the files itself. At the end, a short PySpark example gets the table description from the Metastore service and reads the data from HDFS or S3.</p>
+    </div>
+    <p class="lede">Select a path. Then push <b>Next</b> to see each step. Push a box to read about that part.</p>
+  </header>
+
+  <div class="panel" id="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-path="A" aria-selected="true"><span class="dot"></span>Path A: Oozie hive2</button>
+      <button class="tab" role="tab" data-path="B" aria-selected="false"><span class="dot"></span>Path B: Spark</button>
+      <span class="hint">Push a box for its description</span>
+    </div>
+    <div class="svgbox">
+      <svg viewBox="0 0 930 380" role="group" aria-label="Diagram of Oozie, Beeline, HiveServer2, Metastore service, backing database, Tez, Spark and HDFS">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="aron" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-on" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+        <rect class="group" x="385" y="18" width="540" height="122" rx="10"/>
+        <text class="glabel" x="398" y="38" data-term="hive">HIVE</text>
+
+        <path class="edge" id="e1" d="M150,90 H208" marker-end="url(#ar)"/>
+        <path class="edge" id="e2" d="M340,90 H398" marker-end="url(#ar)"/>
+        <path class="edge" id="e3" d="M530,90 H588" marker-end="url(#ar)"/>
+        <path class="edge" id="e4" d="M720,90 H778" marker-end="url(#ar)"/>
+        <path class="edge" id="e5" d="M85,285 V215 H690 V127" marker-end="url(#ar)"/>
+        <path class="edge" id="e6" d="M465,125 V150" marker-end="url(#ar)"/>
+        <path class="edge" id="e8" d="M465,196 V283" marker-end="url(#ar)"/>
+        <path class="edge" id="e7" d="M150,320 H398" marker-end="url(#ar)"/>
+
+        <text class="el" data-e="e1" x="179" y="82" text-anchor="middle">starts</text>
+        <text class="el" data-e="e2" x="369" y="82" text-anchor="middle">JDBC</text>
+        <text class="el" data-e="e2" x="369" y="108" text-anchor="middle">:10000</text>
+        <text class="el term" data-e="e3" data-term="thrift" x="559" y="82" text-anchor="middle">Thrift</text>
+        <text class="el" data-e="e3" x="559" y="108" text-anchor="middle">:9083</text>
+        <text class="el" data-e="e4" x="749" y="82" text-anchor="middle">JDBC</text>
+        <text class="el" data-e="e4" x="749" y="108" text-anchor="middle">SQL</text>
+        <text class="el term" data-e="e5" data-term="thrift" x="270" y="208" text-anchor="middle">Thrift :9083 (direct)</text>
+        <text class="el" data-e="e6" x="474" y="142">sends job</text>
+        <text class="el" data-e="e8" x="474" y="255">reads files</text>
+        <text class="el" data-e="e7" x="274" y="312" text-anchor="middle">reads files</text>
+
+        <g class="node" id="n-oozie" data-term="oozie" tabindex="0" role="button" aria-label="Oozie hive2 action">
+          <rect x="20" y="55" width="130" height="70" rx="7"/><text class="t" x="85" y="86" text-anchor="middle">Oozie</text><text class="s" x="85" y="106" text-anchor="middle">hive2 action</text></g>
+        <g class="node" id="n-beeline" data-term="beeline" tabindex="0" role="button" aria-label="Beeline">
+          <rect x="210" y="55" width="130" height="70" rx="7"/><text class="t" x="275" y="86" text-anchor="middle">Beeline</text><text class="s" x="275" y="106" text-anchor="middle">SQL client</text></g>
+        <g class="node" id="n-hs2" data-term="hs2" tabindex="0" role="button" aria-label="HiveServer2">
+          <rect x="400" y="55" width="130" height="70" rx="7"/><text class="t" x="465" y="86" text-anchor="middle">HiveServer2</text><text class="s" x="465" y="106" text-anchor="middle">runs queries</text></g>
+        <g class="node" id="n-ms" data-term="metastore" tabindex="0" role="button" aria-label="Metastore service">
+          <rect x="590" y="55" width="130" height="70" rx="7"/><text class="t" x="655" y="86" text-anchor="middle">Metastore</text><text class="s" x="655" y="106" text-anchor="middle">catalog broker</text></g>
+        <g class="node" id="n-db" data-term="db" tabindex="0" role="button" aria-label="Backing database">
+          <rect x="780" y="55" width="130" height="70" rx="7"/><text class="t" x="845" y="86" text-anchor="middle">Backing DB</text><text class="s" x="845" y="106" text-anchor="middle">MySQL / Postgres</text></g>
+        <g class="node" id="n-tez" data-term="tez" tabindex="0" role="button" aria-label="Tez">
+          <rect x="400" y="152" width="130" height="44" rx="7"/><text class="t" x="432" y="179" text-anchor="middle">Tez</text><text class="s" x="488" y="178" text-anchor="middle">runs on YARN</text></g>
+        <g class="node" id="n-spark" data-term="spark" tabindex="0" role="button" aria-label="Spark">
+          <rect x="20" y="285" width="130" height="70" rx="7"/><text class="t" x="85" y="316" text-anchor="middle">Spark</text><text class="s" x="85" y="336" text-anchor="middle" style="font-size:10px">enableHiveSupport()</text></g>
+        <g class="node" id="n-hdfs" data-term="hdfs" tabindex="0" role="button" aria-label="HDFS">
+          <rect x="400" y="285" width="320" height="70" rx="7"/><text class="t" x="560" y="316" text-anchor="middle">HDFS / S3</text><text class="s" x="560" y="336" text-anchor="middle">the data files (Parquet, ORC, text)</text></g>
+      </svg>
+    </div>
+    <div class="player">
+      <div>
+        <div class="count" id="count">Step 1 of 6</div>
+        <p class="stext" id="stext" aria-live="polite"></p>
+      </div>
+      <div class="ctrls">
+        <button class="btn" id="prev">Back</button>
+        <button class="btn primary" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>The parts</h2>
+    <div class="grid">
+      <article class="card" id="c-hive"><span class="kind">The full system</span><h3>Hive</h3>
+        <p>Hive gives SQL access to large data files. The files are in HDFS or S3.</p>
+        <p>Hive has two server parts: HiveServer2 and the Metastore service. The Metastore service keeps its catalog in a backing database.</p>
+        <p>Hive does not keep the data rows. HDFS or S3 keeps the data files.</p></article>
+
+      <article class="card" id="c-hs2"><span class="kind">Server · runs queries</span><h3>HiveServer2</h3>
+        <p>HiveServer2 is a server. It gets SQL from clients and runs it.</p>
+        <ul><li>It checks the user and the permissions.</li><li>It gets table information from the Metastore service.</li><li>It runs a job on the cluster (Tez or MapReduce). For a very simple query, it reads the files without a job.</li><li>It sends the result to the client.</li></ul>
+        <div class="addr">Address: <b>jdbc:hive2://host:10000</b></div></article>
+
+      <article class="card" id="c-tez"><span class="kind">Execution engine</span><h3>Tez</h3>
+        <p>Tez does the work for HiveServer2. HiveServer2 changes the SQL into a Tez job.</p>
+        <p>The job is a graph of steps (a DAG). Tez runs the steps in YARN containers. It sends data between steps without a write to HDFS.</p>
+        <p>Tez is faster than MapReduce. PySpark jobs do not use Tez.</p>
+        <div class="addr">Setting: <b>hive.execution.engine = tez</b></div></article>
+
+      <article class="card" id="c-metastore"><span class="kind">Service · catalog broker</span><h3>Metastore service</h3>
+        <p>The Metastore service is a broker for the table catalog. The catalog itself is in the backing database.</p>
+        <p>Clients send Thrift requests to the service. The service reads or writes the backing database. Then it sends the answer to the client.</p>
+        <p>The service does not keep data rows. It does not run queries.</p>
+        <p>HiveServer2, Spark, Impala and Trino use this service.</p>
+        <div class="addr">Address: <b>thrift://host:9083</b><br>Setting: <b>hive.metastore.uris</b></div></article>
+
+      <article class="card" id="c-db"><span class="kind">Relational database · the catalog</span><h3>Backing database</h3>
+        <p>This is a normal database, for example MySQL, PostgreSQL or Oracle. People also call it the Metastore database.</p>
+        <p>This database is the catalog. For each table, it keeps the name, columns, file location, file format and partitions.</p>
+        <p>Only the Metastore service connects to it. Clients must not connect to it.</p>
+        <div class="addr">Setting: <b>javax.jdo.option.ConnectionURL</b><br>Example: <b>jdbc:mysql://dbhost/metastore</b></div></article>
+
+      <article class="card" id="c-thrift"><span class="kind">Protocol · not a server</span><h3>Thrift</h3>
+        <p>Thrift lets a program call a function on a different computer.</p>
+        <p>Thrift is not a server. It is the method that two programs use to talk on the network.</p>
+        <p>The Metastore service uses Thrift. Spark and HiveServer2 call functions such as <code>get_table</code> through Thrift.</p>
+        <p>The HiveServer2 JDBC driver also uses Thrift inside.</p>
+        <div class="addr">Seen as: <b>thrift://</b> in an address</div></article>
+
+      <article class="card" id="c-beeline"><span class="kind">Client tool</span><h3>Beeline</h3>
+        <p>Beeline is a command-line SQL client.</p>
+        <p>It connects to HiveServer2 through JDBC. It accepts typed SQL or an <code>.hql</code> file.</p>
+        <p>Beeline does not run the query. HiveServer2 runs the query.</p>
+        <div class="addr">Example: <b>beeline -u jdbc:hive2://host:10000 -f load.hql</b></div></article>
+
+      <article class="card" id="c-oozie"><span class="kind">Workflow step</span><h3>Oozie hive2 action</h3>
+        <p>Oozie is a workflow scheduler. A hive2 action is one step in an Oozie workflow.</p>
+        <p>The step starts a launcher job on YARN. The launcher runs Beeline. Beeline sends the <code>.hql</code> script to HiveServer2.</p>
+        <p>On a Kerberos cluster, the step needs a <code>hive2</code> credential.</p>
+        <div class="addr">Setting: <b>&lt;jdbc-url&gt;</b> = the HiveServer2 address</div></article>
+
+      <article class="card" id="c-spark"><span class="kind">Compute engine</span><h3>Spark with Hive support</h3>
+        <p><code>enableHiveSupport()</code> connects Spark to the Metastore service.</p>
+        <p>Spark does not use HiveServer2 or Beeline. Spark gets the table information. Then Spark reads the files itself.</p>
+        <p>If <code>hive.metastore.uris</code> is empty, Spark uses a local Derby database. Then the cluster tables are not visible.</p>
+        <p>Temp views and <code>spark.sql()</code> on temp views do not need Hive.</p>
+        <div class="addr">Main setting: <b>hive.metastore.uris</b></div></article>
+
+      <article class="card" id="c-hdfs"><span class="kind">File storage</span><h3>HDFS / S3</h3>
+        <p>HDFS and S3 keep the data files.</p>
+        <p>The Metastore service tells tools where the files are. Spark then reads the files directly. HiveServer2 starts a Tez job that reads the files.</p>
+        <p>Remember: the backing database keeps metadata. HDFS keeps data.</p>
+        <div class="addr">Example: <b>hdfs://namenode:8020/user/hive/warehouse/mydb.db/mytable</b></div></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Which address goes where</h2>
+    <div class="tbox"><table>
+      <thead><tr><th>Address</th><th>Goes to</th><th>Who uses it</th></tr></thead>
+      <tbody>
+        <tr><td>jdbc:hive2://host:10000</td><td>HiveServer2</td><td>Beeline, Oozie hive2 action, DBeaver, Tableau</td></tr>
+        <tr><td>thrift://host:9083</td><td>Metastore service</td><td>HiveServer2, Spark, Impala, Trino</td></tr>
+        <tr><td>jdbc:mysql://dbhost/metastore</td><td>Backing database</td><td>The Metastore service only</td></tr>
+      </tbody>
+    </table></div>
+    <ul class="rules">
+      <li>HiveServer2 runs queries. The Metastore service does not run queries.</li>
+      <li>The backing database keeps the table description. The Metastore service gives clients access to it. HDFS keeps the data.</li>
+      <li>Spark connects to the Metastore service. Spark does not need HiveServer2.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Useful settings</h2>
+    <div class="tbox"><table class="settings">
+      <thead><tr><th>Setting</th><th>What it does</th><th>Example value</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="3">Spark (in the Spark session or spark-defaults.conf)</td></tr>
+        <tr><td>spark.sql.catalogImplementation</td><td>Selects the Spark catalog. <code>enableHiveSupport()</code> sets it to <code>hive</code>. Without Hive support, the value is <code>in-memory</code>.</td><td class="v">hive</td></tr>
+        <tr><td>spark.hadoop.hive.metastore.uris</td><td>Gives Spark the Metastore service address. Use it when <code>hive-site.xml</code> is not available.</td><td class="v">thrift://metastore-service-host:9083</td></tr>
+        <tr><td>spark.sql.warehouse.dir</td><td>Sets the default location for new managed tables.</td><td class="v">hdfs:///user/hive/warehouse</td></tr>
+        <tr><td>spark.sql.hive.metastore.version</td><td>Tells Spark the Hive version of the Metastore service.</td><td class="v">3.1.3</td></tr>
+        <tr><td>spark.sql.hive.metastore.jars</td><td>Tells Spark where to get the Hive client JARs for that version.</td><td class="v">builtin, maven or a path</td></tr>
+        <tr><td>spark.sql.hive.convertMetastoreParquet</td><td>Spark reads Hive Parquet tables with its own reader. This is faster than the Hive SerDe.</td><td class="v">true</td></tr>
+        <tr><td>spark.sql.hive.convertMetastoreOrc</td><td>The same as the line above, for ORC tables.</td><td class="v">true</td></tr>
+
+        <tr class="grp"><td colspan="3">HiveServer2 and Tez (in hive-site.xml, or with SET in Beeline)</td></tr>
+        <tr><td>hive.execution.engine</td><td>Selects the engine that runs the jobs for HiveServer2.</td><td class="v">tez (or mr)</td></tr>
+        <tr><td>tez.queue.name</td><td>Selects the YARN queue for Tez jobs.</td><td class="v">etl</td></tr>
+        <tr><td>hive.fetch.task.conversion</td><td>Lets simple queries read the files without a Tez job.</td><td class="v">more</td></tr>
+        <tr><td>hive.server2.thrift.port</td><td>Sets the HiveServer2 port for JDBC clients.</td><td class="v">10000</td></tr>
+        <tr><td>hive.server2.transport.mode</td><td>Selects the network mode. In <code>http</code> mode, the port is usually 10001.</td><td class="v">binary or http</td></tr>
+        <tr><td>hive.server2.authentication</td><td>Selects how HiveServer2 checks users.</td><td class="v">KERBEROS or LDAP</td></tr>
+
+        <tr class="grp"><td colspan="3">Metastore service (in hive-site.xml)</td></tr>
+        <tr><td>hive.metastore.uris</td><td>Gives clients the Metastore service address. A list with commas gives high availability.</td><td class="v">thrift://ms1:9083,thrift://ms2:9083</td></tr>
+        <tr><td>hive.metastore.warehouse.dir</td><td>Sets the default location for managed tables.</td><td class="v">/user/hive/warehouse</td></tr>
+        <tr><td>javax.jdo.option.ConnectionURL</td><td>Connects the Metastore service to the backing database. Only the service uses it.</td><td class="v">jdbc:mysql://dbhost/metastore</td></tr>
+        <tr><td>hive.metastore.sasl.enabled</td><td>Turns on Kerberos for Thrift calls to the Metastore service.</td><td class="v">true</td></tr>
+        <tr><td>hive.metastore.kerberos.principal</td><td>Gives the Kerberos name of the Metastore service.</td><td class="v">hive/_HOST@EXAMPLE.COM</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>See it in PySpark</h2>
+    <p class="lede" style="margin:0">This code gets the table description from the Metastore service. Then it reads the data files from HDFS or S3. Replace <code>mydb.sales</code> with a table on the cluster.</p>
+    <div class="code">
+      <button class="copy" id="copy">Copy</button>
+<pre id="pycode"><span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+
+spark = (SparkSession.builder
+         .config(<span class="s2">"spark.hadoop.hive.metastore.uris"</span>, <span class="s2">"thrift://metastore-service-host:9083"</span>)
+         .enableHiveSupport()
+         .getOrCreate())
+
+<span class="c"># Step 1: Ask the Metastore service. Where are the files for this table?</span>
+loc = (spark.sql(<span class="s2">"DESCRIBE FORMATTED mydb.sales"</span>)
+       .where(<span class="s2">"col_name = 'Location'"</span>).first().data_type)
+print(loc)                          <span class="c"># hdfs://... or s3a://...</span>
+
+<span class="c"># Step 2: Read by table name. The Metastore service gives the location. Spark reads the files.</span>
+print(spark.table(<span class="s2">"mydb.sales"</span>).count())
+
+<span class="c"># Step 3: Read the same files by path. This step does not use the Metastore service.</span>
+print(spark.read.parquet(loc).count())    <span class="c"># use .orc() if the table is ORC</span></pre>
+    </div>
+    <ul class="out">
+      <li>Step 1 and Step 2 use the Metastore service (Thrift) for the table description.</li>
+      <li>Step 2 and Step 3 give the same count. In both steps, Spark reads the rows from HDFS or S3.</li>
+      <li>Use a table that is not transactional (ACID). Hive ACID tables keep changes in separate delta files. Spark does not read these tables correctly: it can fail or show wrong rows. To check a table, run <code>SHOW TBLPROPERTIES mydb.sales</code> and look for <code>transactional=true</code>.</li>
+      <li>Run this code as a new application. In a shell that already has a session, Spark can ignore the <code>.config(...)</code> line.</li>
+      <li>If <code>hive.metastore.uris</code> is already in <code>hive-site.xml</code>, the <code>.config(...)</code> line is not necessary.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const PATHS={
+  A:{nodes:["n-oozie","n-beeline","n-hs2","n-ms","n-db","n-tez","n-hdfs"],edges:["e1","e2","e3","e4","e6","e8"],steps:[
+    {n:["n-oozie"],e:[],t:"Oozie starts the hive2 action in the workflow."},
+    {n:["n-beeline"],e:["e1"],t:"The hive2 action starts a launcher job on YARN. The launcher runs Beeline with the .hql script."},
+    {n:["n-hs2"],e:["e2"],t:"Beeline connects to HiveServer2 through JDBC on port 10000. Beeline sends the SQL."},
+    {n:["n-ms"],e:["e3"],t:"HiveServer2 asks the Metastore service for the table information. They use Thrift on port 9083."},
+    {n:["n-db"],e:["e4"],t:"The Metastore service reads the table information from its backing database. It sends the schema and file location to HiveServer2."},
+    {n:["n-tez"],e:["e6"],t:"HiveServer2 changes the SQL into a Tez job. Tez runs the job in YARN containers on the cluster."},
+    {n:["n-hdfs"],e:["e8"],t:"The Tez job reads the data files from HDFS or S3. HiveServer2 sends the result to Beeline."}]},
+  B:{nodes:["n-spark","n-ms","n-db","n-hdfs"],edges:["e5","e4","e7"],steps:[
+    {n:["n-spark"],e:[],t:"The Spark application starts. The session uses enableHiveSupport()."},
+    {n:["n-ms"],e:["e5"],t:"The Spark driver connects directly to the Metastore service through Thrift on port 9083. Spark does not use Beeline or HiveServer2."},
+    {n:["n-db"],e:["e4"],t:"The Metastore service reads the table information from its backing database. It sends the schema and file location to Spark."},
+    {n:["n-hdfs"],e:["e7"],t:"The Spark executors read the data files from HDFS or S3. Spark does not send the data through Hive."}]}
+};
+let path="A", step=0;
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const panel=$("#panel");
+function render(){
+  const P=PATHS[path], seenN=new Set(), seenE=new Set();
+  P.steps.slice(0,step+1).forEach(s=>{s.n.forEach(x=>seenN.add(x));s.e.forEach(x=>seenE.add(x))});
+  const cur=P.steps[step];
+  $$(".node").forEach(g=>{
+    g.classList.toggle("dim",!P.nodes.includes(g.id));
+    g.classList.toggle("seen",seenN.has(g.id));
+    g.classList.toggle("now",cur.n.includes(g.id));
+  });
+  $$(".edge").forEach(p=>{
+    const now=cur.e.includes(p.id), seen=seenE.has(p.id);
+    p.classList.toggle("dim",!P.edges.includes(p.id));
+    p.classList.toggle("seen",seen&&!now);
+    p.classList.toggle("now",now);
+    p.setAttribute("marker-end",seen?"url(#aron)":"url(#ar)");
+  });
+  $$(".el").forEach(t=>t.classList.toggle("dim",!P.edges.includes(t.dataset.e)));
+  panel.classList.toggle("b",path==="B");
+  $("#count").textContent=`Step ${step+1} of ${P.steps.length}`;
+  $("#stext").textContent=cur.t;
+  $("#prev").disabled=step===0;
+  $("#next").textContent=step===P.steps.length-1?"Start again":"Next";
+}
+$("#next").onclick=()=>{step=step<PATHS[path].steps.length-1?step+1:0;render()};
+$("#prev").onclick=()=>{if(step>0){step--;render()}};
+$$(".tab").forEach(b=>b.onclick=()=>{
+  path=b.dataset.path;step=0;
+  $$(".tab").forEach(x=>x.setAttribute("aria-selected",x===b));
+  render();
+});
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function showTerm(k){
+  const c=document.getElementById("c-"+k); if(!c) return;
+  c.scrollIntoView({behavior:reduce?"auto":"smooth",block:"center"});
+  c.classList.add("flash"); setTimeout(()=>c.classList.remove("flash"),1600);
+}
+$$("[data-term]").forEach(el=>{
+  el.addEventListener("click",()=>showTerm(el.dataset.term));
+  el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();showTerm(el.dataset.term)}});
+});
+$("#copy").onclick=async()=>{
+  const b=$("#copy"), txt=$("#pycode").innerText;
+  try{await navigator.clipboard.writeText(txt);b.textContent="Copied"}
+  catch(e){const r=document.createRange();r.selectNodeContents($("#pycode"));const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Press Ctrl+C"}
+  setTimeout(()=>b.textContent="Copy",1800);
+};
+render();
+</script>
+
+</body>
+</html>

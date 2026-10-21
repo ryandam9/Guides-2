@@ -6,6 +6,7 @@ Technical guides and reference notes.
 
 - [Apache Spark Handbook + HBase (visual guide)](docs/spark-hbase-visual-guide.html)
 - [Finding HBase / EMR connection values](docs/emr-hbase-connection-values.md)
+- [Who talks to whom in Hive: HiveServer2, Metastore service, Thrift, Beeline, Tez, Oozie hive2 and Spark (interactive)](docs/hive-components-map.html)
 
 ## AWS and EMR
 

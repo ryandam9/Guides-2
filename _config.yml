@@ -2,5 +2,6 @@ title: Guides
 description: Technical guides and reference notes.
 exclude:
   - CLAUDE.md
+  - README.md
   - tests/
   - scripts/tests/

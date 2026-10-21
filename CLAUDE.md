@@ -64,13 +64,28 @@ emails of the commits about to go out.
 ## The site
 
 GitHub Pages builds the site from `master` with Jekyll (Settings > Pages:
-Deploy from a branch, `master`, `/ (root)`). `README.md` is the home page,
-each Markdown guide becomes an `.html` page, and `.html` files are published
-as they are. `_config.yml` sets the title and leaves out `tests/` and
-`scripts/tests/`.
+Deploy from a branch, `master`, `/ (root)`). `index.html` is the home page and
+is published as it is, like every other `.html` file; each Markdown guide
+becomes an `.html` page. `README.md` lists the guides on the GitHub repo page
+and is not part of the site. `_config.yml` sets the title and leaves out the
+tests, `CLAUDE.md` and `README.md`.
 
-- A new guide gets a link in `README.md`. Link to other guides with relative
-  `.md` links; Jekyll changes them to the `.html` pages.
+- A new guide gets a card in `index.html`, in its topic section, and a link
+  in `README.md`. A card for a Markdown guide links to its `.html` name. A new
+  script gets a row in the "Scripts and configs" section, linking to the file
+  on GitHub. The counts and the search on the page update themselves.
+- This lists the guides that have no card in `index.html` (it should print
+  nothing):
+
+  ```sh
+  for f in $(git ls-files 'docs/*.html' 'docs/*.md' 'scripts/*.html'); do
+    t="${f%.md}"; [ "$t" != "$f" ] && t="$t.html"
+    grep -q "href=\"$t\"" index.html || echo "no card: $f"
+  done
+  ```
+
+- Link to other guides with relative `.md` links; Jekyll changes them to the
+  `.html` pages.
 - Jekyll reads `{{ ... }}` and `{% ... %}` in Markdown files as template
   code, so text such as GitHub Actions' `${{ github.sha }}` disappears from
   the site. Put such a block between `{% raw %}` and `{% endraw %}`.

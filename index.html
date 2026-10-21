@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Technical guides, interactive explainers and scripts for Spark, YARN, Hive, HBase, AWS EMR, secure file transfer and the terminal.">
+  <meta name="color-scheme" content="light dark">
+  <title>Guides</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-2: #eef2f6;
+      --text: #15202b;
+      --muted: #5a6877;
+      --border: #dfe5ec;
+      --border-strong: #c9d2dc;
+      --accent: #0a7c76;
+      --accent-ink: #ffffff;
+      --focus: #2b8ff0;
+      --shadow: 0 1px 2px rgba(21, 32, 43, .05), 0 6px 20px rgba(21, 32, 43, .06);
+      --hue-spark: #c9501a;
+      --hue-aws: #2a66c9;
+      --hue-security: #1b7f52;
+      --hue-terminal: #6d48cc;
+      --hue-charts: #b8336f;
+      --hue-scripts: #4f5d6c;
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1319;
+        --surface: #151c25;
+        --surface-2: #1c2531;
+        --text: #e5eaf0;
+        --muted: #98a5b4;
+        --border: #253140;
+        --border-strong: #34424f;
+        --accent: #3cc2b9;
+        --accent-ink: #062523;
+        --focus: #6cb4ff;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+        --hue-spark: #f08350;
+        --hue-aws: #6c9ff2;
+        --hue-security: #4cc38a;
+        --hue-terminal: #a68cf4;
+        --hue-charts: #ea78ab;
+        --hue-scripts: #9aa7b6;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.55; }
+    a { color: inherit; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+    [hidden] { display: none !important; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .skip { position: absolute; left: -999px; top: 8px; z-index: 10; background: var(--surface); padding: 8px 12px; border-radius: 8px; }
+    .skip:focus { left: 12px; }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    header { border-bottom: 1px solid var(--border); background:
+      radial-gradient(1100px 300px at 85% -40%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+      var(--surface); }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.2px; text-decoration: none; }
+    .logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
+      background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-size: 15px; font-weight: 700; }
+    .gh { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--border-strong);
+      border-radius: 999px; font-size: 14px; text-decoration: none; background: var(--surface); }
+    .gh:hover { border-color: var(--text); }
+    .gh svg { width: 16px; height: 16px; fill: currentColor; }
+    .hero { padding: 40px 0 34px; }
+    .hero h1 { margin: 0 0 10px; font-size: clamp(30px, 5vw, 44px); line-height: 1.1; letter-spacing: -1.2px; }
+    .hero p { margin: 0; max-width: 640px; color: var(--muted); font-size: 17px; }
+    .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
+    .stats li { padding: 5px 12px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
+    .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+    /* Toolbar */
+    .toolbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px);
+      border-bottom: 1px solid var(--border); }
+    .toolbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding-top: 12px; padding-bottom: 12px; }
+    .search { position: relative; flex: 1 1 260px; max-width: 420px; }
+    .search svg { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%);
+      stroke: var(--muted); fill: none; stroke-width: 2; pointer-events: none; }
+    .search input { width: 100%; padding: 9px 40px 9px 36px; font: inherit; font-size: 15px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; }
+    .search input::placeholder { color: var(--muted); }
+    .search kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-family: var(--mono);
+      font-size: 12px; color: var(--muted); border: 1px solid var(--border-strong); border-radius: 5px; padding: 0 6px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      color: var(--muted); background: transparent; border: 1px solid var(--border-strong); }
+    .chip:hover { color: var(--text); border-color: var(--text); }
+    .chip[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+    .result { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Sections and cards */
+    main.wrap { padding-top: 12px; padding-bottom: 56px; }
+    section.topic { margin-top: 38px; }
+    .topic-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+    .topic-head h2 { margin: 0; font-size: 20px; letter-spacing: -.3px; }
+    .topic-head .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--hue); flex: none; transform: translateY(-1px); }
+    .topic-head .count { color: var(--muted); font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+
+    .card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 16px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      text-decoration: none; box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease; }
+    .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: var(--radius) 0 0 var(--radius);
+      background: var(--hue); opacity: .85; }
+    .card:hover { transform: translateY(-2px); border-color: var(--hue); }
+    .card h3 { margin: 0; font-size: 16.5px; line-height: 1.35; letter-spacing: -.2px; }
+    .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+    .meta { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .badge { padding: 2px 8px; border-radius: 999px; font-weight: 600; letter-spacing: .2px;
+      color: var(--hue); background: color-mix(in srgb, var(--hue) 13%, transparent); }
+    .badge.plain { color: var(--muted); background: var(--surface-2); }
+    .fmt { color: var(--muted); font-family: var(--mono); }
+    .go { margin-top: auto; padding-top: 4px; font-size: 13px; font-weight: 600; color: var(--hue); }
+    .card:hover .go span { text-decoration: underline; }
+
+    .feature { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; align-items: center;
+      background: linear-gradient(120deg, color-mix(in srgb, var(--hue) 9%, var(--surface)), var(--surface) 70%); }
+    .feature > div:first-child { display: flex; flex-direction: column; gap: 8px; }
+    .feature h3 { font-size: 21px; }
+    .feature p { font-size: 15px; }
+    .queues { display: grid; gap: 9px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .queues div { display: grid; grid-template-columns: 74px minmax(0, 1fr) 36px; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+    .queues i { display: block; height: 9px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+    .queues i::after { content: ""; display: block; height: 100%; width: var(--w); border-radius: 5px; background: var(--c); }
+    .queues span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Scripts */
+    .scripts { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+    .script { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: 2px 12px; padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; }
+    .script:hover { border-color: var(--hue); }
+    .script .ext { grid-row: span 2; align-self: start; min-width: 40px; padding: 3px 6px; border-radius: 6px; text-align: center;
+      font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--hue); background: color-mix(in srgb, var(--hue) 13%, transparent); }
+    .script code { font-family: var(--mono); font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere; }
+    .script p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+    .empty { margin: 48px 0; text-align: center; color: var(--muted); }
+    footer { border-top: 1px solid var(--border); padding: 22px 0 30px; color: var(--muted); font-size: 13px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+    footer a { color: var(--muted); }
+
+    @media (max-width: 720px) {
+      .wrap { padding: 0 16px; }
+      .toolbar { position: static; }
+      .hero { padding: 28px 0 24px; }
+      .hero p { font-size: 16px; }
+      .feature { grid-template-columns: minmax(0, 1fr); }
+      .grid, .scripts { grid-template-columns: minmax(0, 1fr); }
+      .search { max-width: none; }
+      .search kbd { display: none; }
+      .result { margin-left: 0; }
+      .gh .label { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the guides</a>
+
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <a class="brand" href="./"><span class="logo" aria-hidden="true">&gt;_</span>Guides</a>
+        <a class="gh" href="https://github.com/ryandam9/Guides-2">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span class="label">View on GitHub</span>
+        </a>
+      </div>
+      <div class="hero">
+        <h1>Technical guides and interactive explainers</h1>
+        <p>Practical notes for Spark, YARN, Hive and HBase on Amazon EMR, secure file transfer, and everyday terminal tools, with scripts to go with them.</p>
+        <ul class="stats" id="stats" hidden>
+          <li><b data-count="guide"></b> guides</li>
+          <li><b data-count="interactive"></b> interactive</li>
+          <li><b data-count="script"></b> scripts and configs</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <div class="wrap">
+      <div class="search">
+        <label class="visually-hidden" for="q">Search the guides</label>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search: yarn, oozie, ssh, grep…" autocomplete="off">
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+      <div class="chips" role="group" aria-label="Show">
+        <button class="chip" type="button" data-filter="all" aria-pressed="true">All</button>
+        <button class="chip" type="button" data-filter="interactive" aria-pressed="false">Interactive</button>
+        <button class="chip" type="button" data-filter="guide" aria-pressed="false">Guides</button>
+        <button class="chip" type="button" data-filter="script" aria-pressed="false">Scripts</button>
+      </div>
+      <span class="result" id="result" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <main id="main" class="wrap">
+
+    <section class="topic" style="--hue: var(--hue-spark)" aria-labelledby="t-spark">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-spark">Spark, YARN and Hive</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card feature" href="scripts/yarn_spark_cluster_lab.html" data-type="interactive" data-tags="simulator capacity scheduler queue executor applicationmaster am preemption">
+          <div>
+            <div class="meta"><span class="badge">Interactive simulator</span><span class="fmt">HTML</span></div>
+            <h3>YARN + Spark Cluster Lab</h3>
+            <p>Set up imaginary nodes, queues, users, ApplicationMasters and Spark executors, then watch capacity limits, user limits, container placement and preemption play out.</p>
+            <div class="go"><span>Open the lab</span> →</div>
+          </div>
+          <div class="queues" aria-hidden="true">
+            <div><span>etl</span><i style="--w: 40%; --c: var(--hue-spark)"></i><span>40%</span></div>
+            <div><span>analytics</span><i style="--w: 35%; --c: var(--hue-aws)"></i><span>35%</span></div>
+            <div><span>default</span><i style="--w: 25%; --c: var(--hue-security)"></i><span>25%</span></div>
+          </div>
+        </a>
+        <a class="card" href="docs/yarn_resources_explained_by_claude.html" data-type="interactive" data-tags="yarn resources pending accepted queue am pool user limit oozie launcher">
+          <div class="meta"><span class="badge">Interactive</span><span class="fmt">HTML</span></div>
+          <h3>Why your Spark app gets no YARN resources</h3>
+          <p>The five usual reasons: a container that is too big, a full AM pool, Oozie launchers holding the AM pool, a user limit, or no node with room.</p>
+          <div class="go"><span>Open</span> →</div>
+        </a>
+        <a class="card" href="docs/hive-components-map.html" data-type="interactive" data-tags="hive hiveserver2 metastore thrift beeline tez oozie hive2 spark pyspark">
+          <div class="meta"><span class="badge">Interactive</span><span class="fmt">HTML</span></div>
+          <h3>Who talks to whom in Hive</h3>
+          <p>HiveServer2, the Metastore service, Thrift, Beeline, Tez, Oozie hive2 actions and Spark: which address goes where, useful settings, and PySpark.</p>
+          <div class="go"><span>Open</span> →</div>
+        </a>
+        <a class="card" href="docs/spark-hbase-visual-guide.html" data-type="guide" data-tags="spark hbase partitions shuffle joins memory handbook diagrams">
+          <div class="meta"><span class="badge">Visual guide</span><span class="fmt">HTML</span></div>
+          <h3>Apache Spark Handbook + HBase</h3>
+          <p>Spark in pictures: who runs an application, how Spark plans and divides work, partitions, shuffles, joins, memory and files, then HBase storage.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="https://github.com/ryandam9/yarn-resource-config" data-type="script" data-tags="yarn_resource_config.py python report capacity scheduler">
+          <div class="meta"><span class="badge plain">Repository</span><span class="fmt">Python ↗</span></div>
+          <h3>yarn-resource-config</h3>
+          <p>A script that reports, in plain words, why a Spark app gets no YARN resources, from the YARN, Capacity Scheduler, Spark and Oozie settings.</p>
+          <div class="go"><span>Open on GitHub</span> ↗</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-aws)" aria-labelledby="t-aws">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-aws">AWS and EMR</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card" href="docs/emr-hbase-connection-values.html" data-type="guide" data-tags="emr hbase zookeeper quorum hmaster kerberos principal metastore thrift namenode resourcemanager">
+          <div class="meta"><span class="badge">Reference</span><span class="fmt">Markdown</span></div>
+          <h3>Finding HBase / EMR connection values</h3>
+          <p>Commands for the ZooKeeper quorum, EMR master and HMaster hosts, Kerberos principal, Metastore URI and NameNode address, with annotated output.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/oozie-emr-debugging.html" data-type="guide" data-tags="oozie workflow coordinator bundle validate dry run logs rerun kill">
+          <div class="meta"><span class="badge">Reference</span><span class="fmt">Markdown</span></div>
+          <h3>Debugging Oozie workflows on Amazon EMR</h3>
+          <p>Validate workflow XML, dry-run, inspect jobs, read the three layers of logs, and rerun, resume or kill workflows, coordinators and bundles.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/aws_ssm_explained_by_claude.html" data-type="interactive" data-tags="ssm session manager ec2 iam policy tunnel port forwarding claude">
+          <div class="meta"><span class="badge">Interactive</span><span class="fmt">HTML</span></div>
+          <h3>AWS SSM Session Manager explained</h3>
+          <p>How Session Manager connects you to an instance with no SSH key or open port: what must be true, a minimal IAM policy, and other uses of the tunnel.</p>
+          <div class="go"><span>Open</span> →</div>
+        </a>
+        <a class="card" href="docs/aws_ssm_explained_by_gpt.html" data-type="interactive" data-tags="ssm session manager ec2 gpt">
+          <div class="meta"><span class="badge">Interactive</span><span class="fmt">HTML</span></div>
+          <h3>How AWS SSM really works (GPT version)</h3>
+          <p>The same topic explained by GPT, for comparison with the Claude version.</p>
+          <div class="go"><span>Open</span> →</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-security)" aria-labelledby="t-security">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-security">Security</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card" href="docs/secure-file-transfer-sftp-openpgp.html" data-type="guide" data-tags="sftp ssh openpgp gpg pgp encryption signing keys file transfer">
+          <div class="meta"><span class="badge">Step by step</span><span class="fmt">Markdown</span></div>
+          <h3>Secure file exchange with SFTP and OpenPGP</h3>
+          <p>System A sends files to System B: OpenPGP keys, encryption and signing, SFTP over SSH, what both sides must agree on, with an infographic.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-terminal)" aria-labelledby="t-terminal">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-terminal">Terminal and tools</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card" href="docs/tmux.html" data-type="guide" data-tags="tmux sessions windows panes multiplexer shortcuts">
+          <div class="meta"><span class="badge">Reference</span><span class="fmt">Markdown</span></div>
+          <h3>tmux</h3>
+          <p>Sessions, windows and panes that keep running after you disconnect, the shortcuts, and how to save your work.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/nano-editor.html" data-type="guide" data-tags="nano editor shortcuts nanorc">
+          <div class="meta"><span class="badge">Reference</span><span class="fmt">Markdown</span></div>
+          <h3>GNU nano</h3>
+          <p>Keyboard shortcuts, command-line options and configuration for the nano editor.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/ghostty.html" data-type="guide" data-tags="ghostty terminal themes fonts shaders">
+          <div class="meta"><span class="badge">How-to</span><span class="fmt">Markdown</span></div>
+          <h3>Ghostty</h3>
+          <p>Make the Ghostty terminal look great: themes, fonts, quality-of-life settings, the quick terminal and custom shaders.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/grep-guide.html" data-type="guide" data-tags="grep regex search logs recursive">
+          <div class="meta"><span class="badge">Reference</span><span class="fmt">Markdown</span></div>
+          <h3>grep</h3>
+          <p>Everyday flags, context lines, AND / OR / NOT, regex flavors, recursive search, binary files and log-hunting recipes.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+        <a class="card" href="docs/github-actions-grep-logs.html" data-type="guide" data-tags="github actions logs gh cli grep ci">
+          <div class="meta"><span class="badge">How-to</span><span class="fmt">Markdown</span></div>
+          <h3>Grepping GitHub Actions run logs</h3>
+          <p>Search across runs with the gh CLI and grep: find a run, grep one or many, download logs, and watch a live run.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-charts)" aria-labelledby="t-charts">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-charts">Charts and notebooks</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card" href="docs/stacked-area-chart.html" data-type="guide" data-tags="chart plotly area_chart notebook sagemaker emr sparkmagic">
+          <div class="meta"><span class="badge">How-to</span><span class="fmt">Markdown</span></div>
+          <h3>Stacked area chart with <code>area_chart()</code></h3>
+          <p>A stacked area chart of daily rows per source in a SageMaker Studio or EMR notebook, from the data shape to a self-contained demo.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-scripts)" aria-labelledby="t-scripts">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-scripts">Scripts and configs</h2><span class="count"></span></div>
+      <div class="scripts">
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/terminal-bootstrap.sh" data-type="script" data-tags="bash shell prompt vim tmux beeline yarn oozie hbase xml browser terminal">
+          <span class="ext">.sh</span><code>terminal-bootstrap.sh</code>
+          <p>A friendly shell for browser terminals, no sudo: theme, Vim, tmux, and helpers for Beeline, YARN, Oozie, HBase and XML. Safe to re-run.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/terminal-bootstrap-min.sh" data-type="script" data-tags="bash shell prompt browser terminal">
+          <span class="ext">.sh</span><code>terminal-bootstrap-min.sh</code>
+          <p>The same, without Vim, tmux and the Hadoop helpers.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/yarnapps.sh" data-type="script" data-tags="yarn applications oozie launcher bash">
+          <span class="ext">.sh</span><code>yarnapps.sh</code>
+          <p>Lists YARN applications with the Oozie launcher names decoded.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/notebook_style.py" data-type="script" data-tags="python jupyter sagemaker pandas plotly charts area_chart">
+          <span class="ext">.py</span><code>notebook_style.py</code>
+          <p>Styling for JupyterLab and SageMaker Studio: fonts, tables, pandas options, and bar, line, area and donut charts.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/notebook_style_v2.py" data-type="script" data-tags="python jupyter sagemaker excel export">
+          <span class="ext">.py</span><code>notebook_style_v2.py</code>
+          <p>Version 2: adds notebook colors, a syntax theme, and saving tables to Excel or as images.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/spark_hbase_diagrams.py" data-type="script" data-tags="python svg diagrams spark hbase">
+          <span class="ext">.py</span><code>spark_hbase_diagrams.py</code>
+          <p>Generates the SVG diagrams in the Spark + HBase visual guide.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/ghostty/config" data-type="script" data-tags="ghostty config macos terminal">
+          <span class="ext">cfg</span><code>ghostty/config</code>
+          <p>The Ghostty configuration from the Ghostty guide (macOS).</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/ghostty/get-shaders.sh" data-type="script" data-tags="ghostty shaders glsl download">
+          <span class="ext">.sh</span><code>ghostty/get-shaders.sh</code>
+          <p>Downloads community shader packs for Ghostty.</p>
+        </a>
+        <a class="script" href="https://github.com/ryandam9/Guides-2/blob/master/scripts/nano-ctrl-bindings.nanorc" data-type="script" data-tags="nano nanorc keymap browser terminal">
+          <span class="ext">rc</span><code>nano-ctrl-bindings.nanorc</code>
+          <p>A nano keymap without Meta keys, for browser terminals.</p>
+        </a>
+      </div>
+    </section>
+
+    <p class="empty" id="empty" hidden>Nothing matches. Try another word, or show All.</p>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Guides · <a href="https://github.com/ryandam9/Guides-2">source on GitHub</a></span>
+      <span><a href="https://github.com/ryandam9/Guides-2/blob/master/LICENSE">MIT License</a></span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var items = Array.prototype.slice.call(document.querySelectorAll("[data-type]"));
+      var topics = Array.prototype.slice.call(document.querySelectorAll("section.topic"));
+      var input = document.getElementById("q");
+      var chips = Array.prototype.slice.call(document.querySelectorAll(".chip"));
+      var result = document.getElementById("result");
+      var empty = document.getElementById("empty");
+      var filter = "all";
+
+      items.forEach(function (el) {
+        el.searchText = (el.textContent + " " + (el.getAttribute("data-tags") || "")).toLowerCase();
+      });
+
+      // Header counts: guides are everything that is not a script.
+      var counts = { guide: 0, interactive: 0, script: 0 };
+      items.forEach(function (el) {
+        var type = el.getAttribute("data-type");
+        if (type === "script") counts.script++; else counts.guide++;
+        if (type === "interactive") counts.interactive++;
+      });
+      document.querySelectorAll("[data-count]").forEach(function (el) {
+        el.textContent = counts[el.getAttribute("data-count")];
+      });
+      document.getElementById("stats").hidden = false;
+      document.getElementById("toolbar").hidden = false;
+
+      function matchesFilter(el) {
+        var type = el.getAttribute("data-type");
+        if (filter === "all") return true;
+        if (filter === "guide") return type !== "script";
+        return type === filter;
+      }
+
+      function apply() {
+        var terms = input.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        var shown = 0;
+        items.forEach(function (el) {
+          var ok = matchesFilter(el) && terms.every(function (t) { return el.searchText.indexOf(t) !== -1; });
+          el.hidden = !ok;
+          if (ok) shown++;
+        });
+        topics.forEach(function (section) {
+          var visible = section.querySelectorAll("[data-type]:not([hidden])").length;
+          section.hidden = visible === 0;
+          section.querySelector(".count").textContent = visible;
+        });
+        empty.hidden = shown !== 0;
+        result.textContent = shown === items.length ? items.length + " items" : shown + " of " + items.length;
+      }
+
+      input.addEventListener("input", apply);
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { input.value = ""; apply(); }
+      });
+      chips.forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          filter = chip.getAttribute("data-filter");
+          chips.forEach(function (c) { c.setAttribute("aria-pressed", String(c === chip)); });
+          apply();
+        });
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "/" && document.activeElement !== input && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          input.focus();
+        }
+      });
+      apply();
+    })();
+  </script>
+</body>
+</html>

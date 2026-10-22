@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="How eight eMudhra CA keys became weak, how they were found, how browsers, root programs and Go responded, and what to update.">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>The eMudhra Weak Keys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one incident logbook column, wide drawings, a timeline rail, a fix table. */
+:root{
+  --bg:#eef2f4; --paper:#ffffff; --ink:#14212b; --muted:#56656f; --line:#cdd7dd;
+  --accent:#0f6d6a; --accent-soft:#d6ecea; --alert:#c2410c; --alert-soft:#fde3d3;
+  --ok:#2f7d32; --ok-soft:#dcefdc; --gold:#b7791f;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e161c; --paper:#16222a; --ink:#e6edf1; --muted:#9aabb6; --line:#2a3a45;
+  --accent:#4fc1bb; --accent-soft:#163a3a; --alert:#fb8a52; --alert-soft:#3d2216;
+  --ok:#7ccf80; --ok-soft:#1c3320; --gold:#e3b04b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e161c; --paper:#16222a; --ink:#e6edf1; --muted:#9aabb6; --line:#2a3a45;
+  --accent:#4fc1bb; --accent-soft:#163a3a; --alert:#fb8a52; --alert-soft:#3d2216;
+  --ok:#7ccf80; --ok-soft:#1c3320; --gold:#e3b04b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:820px;margin:0 auto;padding-block:32px 64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.1;margin:0}
+h1{font-size:clamp(2.4rem,7vw,4.2rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:700}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0;max-width:65ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+section{display:flex;flex-direction:column;gap:18px;min-width:0}
+.mono{font-family:var(--mono);font-size:.9em}
+.ste{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;
+  border:1px solid var(--line);border-radius:4px;padding:3px 8px;color:var(--muted);width:fit-content}
+.lede{font-size:1.2rem;color:var(--ink)}
+.muted{color:var(--muted)}
+figure{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.9rem;color:var(--muted)}
+.scroll{overflow-x:auto}
+
+/* svg tokens */
+.f-paper{fill:var(--paper)} .f-bg{fill:var(--bg)} .f-ink{fill:var(--ink)} .f-muted{fill:var(--muted)}
+.f-accent{fill:var(--accent)} .f-asoft{fill:var(--accent-soft)} .f-alert{fill:var(--alert)} .f-alsoft{fill:var(--alert-soft)}
+.f-ok{fill:var(--ok)} .f-oksoft{fill:var(--ok-soft)} .f-gold{fill:var(--gold)} .f-line{fill:var(--line)}
+.s-ink{stroke:var(--ink)} .s-line{stroke:var(--line)} .s-accent{stroke:var(--accent)} .s-alert{stroke:var(--alert)} .s-muted{stroke:var(--muted)} .s-ok{stroke:var(--ok)}
+svg text{font-family:var(--body)} svg .t-mono{font-family:var(--mono)} svg .t-disp{font-family:var(--display);font-weight:700}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:center}
+.hero > div{min-width:0;display:flex;flex-direction:column;gap:16px}
+@media (max-width:680px){.hero{grid-template-columns:1fr}}
+
+/* glossary */
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.term{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.term b{font-family:var(--display);font-size:1.05rem}
+.term span{font-size:.95rem;color:var(--muted)}
+
+/* steps */
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:12px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start}
+ol.steps li::before{content:counter(s);font-family:var(--mono);font-weight:600;font-size:.9rem;
+  width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+ol.steps li > div{min-width:0}
+
+/* callouts */
+.note{border-left:4px solid var(--accent);background:var(--paper);padding:14px 18px;border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:6px}
+.note.warn{border-left-color:var(--alert)}
+.note b.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+.note.warn b.tag{color:var(--alert)} .note b.tag{color:var(--accent)}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:0;position:relative;display:flex;flex-direction:column;gap:18px}
+.tl::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl li{position:relative;padding-left:34px;display:flex;flex-direction:column;gap:2px}
+.tl li::before{content:"";position:absolute;left:2px;top:6px;width:16px;height:16px;border-radius:50%;
+  background:var(--paper);border:3px solid var(--accent)}
+.tl li.bad::before{border-color:var(--alert)}
+.tl li.good::before{border-color:var(--ok)}
+.tl time{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.tl .day{font-family:var(--display);font-weight:700;font-size:1.1rem;margin-top:8px;padding-left:34px}
+.tl .day::before{display:none}
+
+/* tables */
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.95rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.v{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+.pill{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--alert-soft);color:var(--alert)} .pill.mid{background:var(--accent-soft);color:var(--accent)}
+.tablebox{background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:620px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card.good{border-top:4px solid var(--ok)} .card.bad{border-top:4px solid var(--alert)}
+.card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+ol.steps li.miss::before{background:var(--alert-soft);color:var(--alert)}
+ol.steps li.miss .pill{margin-left:6px}
+td.k{font-family:var(--display);font-weight:700;white-space:nowrap}
+.term em.ex{font-style:normal;font-family:var(--mono);font-size:.75rem;color:var(--accent);border-top:1px dashed var(--line);padding-top:6px}
+pre.code{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:.8rem;line-height:1.55;color:var(--ink)}
+pre.code .c{color:var(--muted)}
+pre.code .a{color:var(--ok);font-weight:600}
+pre.code .h{color:var(--accent)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.fact{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact small{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fact span{font-family:var(--mono);font-size:.82rem;word-break:break-all}
+.fact a,section > p a{color:var(--accent)}
+.walk{display:flex;flex-direction:column;gap:12px;border-left:3px solid var(--accent-soft);padding-left:16px;min-width:0}
+.walk h3{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+td .pill{margin-left:6px}
+.walk h3 .file{font-family:var(--mono);font-size:.78rem;font-weight:400;color:var(--accent)}
+td .ex{display:block;font-family:var(--mono);font-size:.78rem;color:var(--accent);margin-top:2px}
+
+.sources{font-size:.9rem;display:flex;flex-direction:column;gap:6px;padding-left:18px;margin:0}
+.sources a{color:var(--accent);word-break:break-word}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div>
+    <span class="eyebrow">Incident report · October 2026 · Bug 2083449</span>
+    <h1>Eight keys, 256 guesses</h1>
+    <p class="lede">A trusted certificate company made eight secret keys that were too weak. Anyone with a laptop can find these keys in less than one second.</p>
+    <p>With these keys, a person can make a fake "ID card" for any website. This page tells you what occurred, how it occurred, and what you must do.</p>
+  </div>
+  <figure aria-label="Drawing of a padlock with a dial that has only 256 positions">
+    <svg viewBox="0 0 320 300" role="img" aria-labelledby="h-t">
+      <title id="h-t">A padlock with a dial of only 256 positions</title>
+      <circle cx="160" cy="160" r="140" class="f-asoft"/>
+      <path d="M105 140 V95 a55 55 0 0 1 110 0 V140" fill="none" class="s-ink" stroke-width="18" stroke-linecap="round"/>
+      <rect x="70" y="135" width="180" height="140" rx="18" class="f-accent"/>
+      <circle cx="160" cy="205" r="50" class="f-paper"/>
+      <g class="s-ink" stroke-width="2">
+        <line x1="160" y1="159" x2="160" y2="167"/><line x1="206" y1="205" x2="198" y2="205"/>
+        <line x1="160" y1="251" x2="160" y2="243"/><line x1="114" y1="205" x2="122" y2="205"/>
+        <line x1="192.5" y1="172.5" x2="187" y2="178"/><line x1="127.5" y1="172.5" x2="133" y2="178"/>
+        <line x1="192.5" y1="237.5" x2="187" y2="232"/><line x1="127.5" y1="237.5" x2="133" y2="232"/>
+      </g>
+      <text x="160" y="200" text-anchor="middle" class="t-disp f-ink" font-size="22">1–255</text>
+      <text x="160" y="222" text-anchor="middle" class="t-mono f-muted" font-size="10">positions</text>
+      <line x1="160" y1="205" x2="185" y2="180" class="s-alert" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="160" cy="205" r="5" class="f-alert"/>
+      <g transform="translate(232 44)">
+        <circle r="30" class="f-alert"/>
+        <text y="-2" text-anchor="middle" class="t-disp" font-size="18" style="fill:var(--paper)">&lt; 1 s</text>
+        <text y="14" text-anchor="middle" font-size="9" style="fill:var(--paper)">to open</text>
+      </g>
+    </svg>
+    <figcaption>A good key is like a dial with 10<sup>115</sup> positions. These eight keys had only 255.</figcaption>
+  </figure>
+</header>
+
+<!-- WORDS -->
+<section>
+  <span class="eyebrow">Part 1</span>
+  <h2>Words you must know</h2>
+  <p>This report uses some technical names. Read these definitions first.</p>
+  <div class="terms">
+    <div class="term"><b>Certificate</b><span>A digital ID card. A website shows it to your browser to prove its name.</span><em class="ex">Example: the certificate for *.google.com</em></div>
+    <div class="term"><b>Certificate Authority (CA)</b><span>A company that makes certificates. Browsers trust a small list of CAs. eMudhra is a CA in India.</span><em class="ex">Examples: Let's Encrypt, DigiCert, Sectigo, eMudhra</em></div>
+    <div class="term"><b>Root certificate</b><span>The top CA certificate. Your browser or operating system keeps a copy of it.</span><em class="ex">Examples: ISRG Root X1, emSign ECC Root CA – G3</em></div>
+    <div class="term"><b>Intermediate certificate</b><span>A CA certificate that the root signs. It signs the website certificates.</span><em class="ex">Examples: Let's Encrypt R11, EM DV TLS CA – G3B</em></div>
+    <div class="term"><b>Private key</b><span>A secret number. Its owner uses it to sign. Nobody else must know it.</span><em class="ex">Example: the weak G3B key was the number 156</em></div>
+    <div class="term"><b>Public key</b><span>A number that all persons can see. It is inside the certificate. It shows that a signature is correct.</span><em class="ex">Example: "Public Key: ECDSA P-384" in the certificate details</em></div>
+    <div class="term"><b>HSM</b><span>Hardware Security Module. A locked box that makes keys and keeps them safe.</span><em class="ex">Examples: Thales Luna, Entrust nShield, Utimaco</em></div>
+    <div class="term"><b>Revocation</b><span>An instruction that tells software: "Do not trust this certificate now."</span><em class="ex">Example: eMudhra revoked the 8 intermediates on 18 Oct</em></div>
+    <div class="term"><b>CSR</b><span>Certificate Signing Request. A file that holds a new public key and a name. A CA signs it to make a certificate.</span><em class="ex">Example: a file made with "openssl req"</em></div>
+    <div class="term"><b>Key ceremony</b><span>A recorded meeting with fixed steps. In it, a CA makes a new CA key.</span><em class="ex">Example: eMudhra's ceremony on 30 April 2025</em></div>
+    <div class="term"><b>Cross-sign</b><span>A second CA also signs the same key. This gives a second path to trust.</span><em class="ex">Example: Sectigo cross-signed the 8 eMudhra keys</em></div>
+    <div class="term"><b>Root program</b><span>A team that decides which roots a product trusts. Mozilla, Google, Apple and Microsoft each have one.</span><em class="ex">Example: Mozilla's list ships in NSS</em></div>
+  </div>
+</section>
+
+<!-- CHAIN -->
+<section>
+  <span class="eyebrow">Part 2</span>
+  <h2>How root and intermediate CAs work</h2>
+  <p>Your browser does not know each website. It knows only about 150 roots. It follows a chain from the website up to a root.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 250" role="img" aria-labelledby="c-t" style="min-width:560px">
+      <title id="c-t">Chain of trust: root signs intermediate, intermediate signs website, browser checks the chain</title>
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <!-- root -->
+      <g transform="translate(20 50)">
+        <rect width="190" height="130" rx="12" class="f-asoft s-accent" stroke-width="2"/>
+        <circle cx="40" cy="45" r="22" class="f-gold"/><text x="40" y="51" text-anchor="middle" class="t-disp" font-size="16" style="fill:var(--paper)">★</text>
+        <text x="72" y="40" class="t-disp f-ink" font-size="16">Root</text>
+        <text x="72" y="58" class="f-muted" font-size="11">emSign ECC Root</text>
+        <text x="72" y="72" class="f-muted" font-size="11">CA – G3</text>
+        <text x="16" y="105" class="f-ink" font-size="12">Kept in your browser</text>
+        <text x="16" y="120" class="f-ink" font-size="12">and operating system</text>
+      </g>
+      <line x1="215" y1="115" x2="275" y2="115" class="s-muted" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="245" y="105" text-anchor="middle" class="f-muted" font-size="11">signs</text>
+      <!-- intermediate -->
+      <g transform="translate(285 50)">
+        <rect width="190" height="130" rx="12" class="f-alsoft s-alert" stroke-width="3"/>
+        <rect x="18" y="24" width="44" height="40" rx="6" class="f-alert"/>
+        <text x="40" y="50" text-anchor="middle" class="t-disp" font-size="14" style="fill:var(--paper)">KEY</text>
+        <text x="72" y="40" class="t-disp f-ink" font-size="16">Intermediate</text>
+        <text x="72" y="58" class="f-muted" font-size="11">EM DV TLS CA – G3B</text>
+        <text x="72" y="72" class="f-muted" font-size="11">(and 7 more)</text>
+        <text x="16" y="105" class="f-alert t-disp" font-size="13">The weak private key</text>
+        <text x="16" y="120" class="f-alert t-disp" font-size="13">is here</text>
+      </g>
+      <line x1="480" y1="115" x2="540" y2="115" class="s-muted" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="510" y="105" text-anchor="middle" class="f-muted" font-size="11">signs</text>
+      <!-- leaf -->
+      <g transform="translate(550 50)">
+        <rect width="190" height="130" rx="12" class="f-paper s-line" stroke-width="2"/>
+        <rect x="18" y="22" width="54" height="40" rx="5" class="f-bg s-line"/>
+        <circle cx="34" cy="38" r="7" class="f-muted"/><rect x="26" y="48" width="38" height="5" rx="2" class="f-line"/>
+        <text x="82" y="40" class="t-disp f-ink" font-size="16">Website</text>
+        <text x="82" y="58" class="f-muted" font-size="11">yourbank.com</text>
+        <text x="16" y="105" class="f-ink" font-size="12">Shows this card to</text>
+        <text x="16" y="120" class="f-ink" font-size="12">your browser</text>
+      </g>
+      <path d="M645 190 C645 235, 115 235, 115 190" fill="none" class="s-accent" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+      <text x="380" y="242" text-anchor="middle" class="f-accent" font-size="12">Browser checks each signature, up to a root it trusts → shows the padlock</text>
+    </svg>
+    </div>
+    <figcaption>If a person gets the intermediate's private key, that person can sign a card for any website. The browser will accept it.</figcaption>
+  </figure>
+
+  <h3>One root, many intermediates</h3>
+  <p>A CA has a small number of roots. Each root signs some intermediates. Each intermediate signs many customer certificates.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 420" role="img" aria-labelledby="hi-t" style="min-width:560px">
+      <title id="hi-t">One root in an offline vault signs intermediates in an online data centre; intermediates sign website and program certificates</title>
+      <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <rect x="220" y="10" width="320" height="110" rx="14" class="f-asoft s-accent" stroke-width="2" stroke-dasharray="6 5"/>
+      <text x="236" y="32" class="t-mono f-accent" font-size="11">OFFLINE VAULT · HSM</text>
+      <rect x="290" y="44" width="180" height="62" rx="10" class="f-paper s-accent" stroke-width="2"/>
+      <circle cx="318" cy="75" r="16" class="f-gold"/>
+      <text x="318" y="80" text-anchor="middle" font-size="14" style="fill:var(--paper)">★</text>
+      <text x="344" y="70" class="t-disp f-ink" font-size="15">Root CA</text>
+      <text x="344" y="88" class="f-muted" font-size="11">up to 25 years</text>
+      <path d="M470 62 c34 0 34 30 2 30" fill="none" class="s-muted" stroke-width="2" marker-end="url(#ar4)"/>
+      <text x="504" y="81" class="f-muted" font-size="10">signs itself</text>
+
+      <rect x="10" y="150" width="740" height="110" rx="14" fill="none" class="s-line" stroke-width="2" stroke-dasharray="6 5"/>
+      <text x="26" y="170" class="t-mono f-muted" font-size="11">ONLINE · CA DATA CENTRE · HSM</text>
+      <path d="M380 106 V130 H130 V182" fill="none" class="s-muted" stroke-width="2"/>
+      <path d="M380 130 V182" fill="none" class="s-muted" stroke-width="2"/>
+      <path d="M380 130 H630 V182" fill="none" class="s-muted" stroke-width="2"/>
+      <g class="f-paper s-ink" stroke-width="1.5">
+        <rect x="30" y="182" width="200" height="62" rx="10"/>
+        <rect x="280" y="182" width="200" height="62" rx="10"/>
+        <rect x="530" y="182" width="200" height="62" rx="10"/>
+      </g>
+      <text x="130" y="207" text-anchor="middle" class="t-disp f-ink" font-size="14">Intermediate · TLS DV</text>
+      <text x="380" y="207" text-anchor="middle" class="t-disp f-ink" font-size="14">Intermediate · TLS EV</text>
+      <text x="630" y="207" text-anchor="middle" class="t-disp f-ink" font-size="14">Intermediate · Code signing</text>
+      <text x="130" y="227" text-anchor="middle" class="f-muted" font-size="11">5–10 years · signs each day</text>
+      <text x="380" y="227" text-anchor="middle" class="f-muted" font-size="11">5–10 years · signs each day</text>
+      <text x="630" y="227" text-anchor="middle" class="f-muted" font-size="11">5–10 years · signs each day</text>
+
+      <g fill="none" class="s-muted" stroke-width="1.5">
+        <path d="M130 244 V284 H75 V310"/><path d="M130 284 H185 V310"/>
+        <path d="M380 244 V284 H325 V310"/><path d="M380 284 H435 V310"/>
+        <path d="M630 244 V284 H575 V310"/><path d="M630 284 H685 V310"/>
+      </g>
+      <g class="f-bg s-line" stroke-width="1.5">
+        <rect x="25" y="310" width="100" height="56" rx="8"/><rect x="135" y="310" width="100" height="56" rx="8"/>
+        <rect x="275" y="310" width="100" height="56" rx="8"/><rect x="385" y="310" width="100" height="56" rx="8"/>
+        <rect x="525" y="310" width="100" height="56" rx="8"/><rect x="635" y="310" width="100" height="56" rx="8"/>
+      </g>
+      <g class="t-mono f-ink" font-size="11" text-anchor="middle">
+        <text x="75" y="334">shop.com</text><text x="185" y="334">blog.net</text>
+        <text x="325" y="334">bank.com</text><text x="435" y="334">tax.gov.in</text>
+        <text x="575" y="334">app.exe</text><text x="685" y="334">driver.sys</text>
+      </g>
+      <g class="f-muted" font-size="10" text-anchor="middle">
+        <text x="75" y="352">website</text><text x="185" y="352">website</text>
+        <text x="325" y="352">website</text><text x="435" y="352">website</text>
+        <text x="575" y="352">program</text><text x="685" y="352">program</text>
+      </g>
+      <text x="380" y="400" text-anchor="middle" class="f-muted" font-size="11">Website certificates: 200 days maximum from March 2026, then 100 days (2027) and 47 days (2029)</text>
+    </svg>
+    </div>
+    <figcaption>The root key stays offline. Staff use it only a few times each year, in a ceremony. The intermediates do the daily work.</figcaption>
+  </figure>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr><th></th><th>Root CA</th><th>Intermediate CA</th><th>Website certificate</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Who makes the key</td><td>The CA, in a key ceremony</td><td>The CA, in a key ceremony</td><td>The website owner, on the server</td></tr>
+        <tr><td class="k">Who signs it</td><td>It signs itself</td><td>The root</td><td>An intermediate</td></tr>
+        <tr><td class="k">Where the key is</td><td>Offline HSM in a vault</td><td>Online HSM in the CA data centre</td><td>The web server</td></tr>
+        <tr><td class="k">How often used</td><td>A few times each year</td><td>Many times each second</td><td>Each connection</td></tr>
+        <tr><td class="k">Life</td><td>Up to 25 years</td><td>Often 5–10 years</td><td>200 days maximum</td></tr>
+        <tr><td class="k">In your device</td><td>Yes, in the root list</td><td>No, the website sends it</td><td>No, the website sends it</td></tr>
+        <tr><td class="k">Real example</td><td>ISRG Root X1<span class="ex">GTS Root R1</span></td><td>Let's Encrypt R11<span class="ex">Google WR2</span></td><td>example.org<span class="ex">*.google.com</span></td></tr>
+        <tr><td class="k">eMudhra example</td><td>emSign ECC Root CA – G3</td><td>EM DV TLS CA – G3B</td><td>None issued</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h3>Why a CA uses two levels</h3>
+      <p>If an intermediate key is lost, the CA revokes only that intermediate. The root continues to operate. If a root key is lost, all certificates below it fail, and each device must get an update.</p></div>
+    <div class="card"><h3>Why new certificates need no update</h3>
+      <p>Your browser does not keep a list of all certificates. It only checks the signatures up to a root. A certificate that a CA signs today works immediately.</p></div>
+  </div>
+
+  <h3>How a website gets a certificate</h3>
+  <ol class="steps">
+    <li><div>The website owner makes a key pair and a CSR on the server.</div></li>
+    <li><div>The CA checks that the owner controls the domain. For OV and EV, the CA also checks the company.</div></li>
+    <li><div>The intermediate HSM signs the certificate.</div></li>
+    <li><div>The CA records the certificate in public Certificate Transparency logs.</div></li>
+    <li><div>The owner installs the certificate and the intermediate on the server.</div></li>
+    <li><div>Your browser gets both, checks the chain to a root, and shows the padlock.</div></li>
+  </ol>
+</section>
+
+<!-- TYPES -->
+<section>
+  <span class="eyebrow">Part 3</span>
+  <h2>Types of certificates</h2>
+  <p>Certificates are different in four ways: how much the CA checks, what the certificate is for, how many names it covers, and the type of key.</p>
+
+  <h3>1. By how much the CA checks</h3>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 260" role="img" aria-labelledby="ty-t" style="min-width:560px">
+      <title id="ty-t">Three ID cards: DV checks the domain, OV also checks the company, EV also does legal checks</title>
+      <g transform="translate(15 15)">
+        <rect width="220" height="230" rx="12" class="f-paper s-line" stroke-width="2"/>
+        <rect width="220" height="40" rx="12" class="f-line"/><rect y="28" width="220" height="12" class="f-line"/>
+        <text x="16" y="26" class="t-disp f-ink" font-size="12">DV · Domain Validated</text>
+        <text x="16" y="72" class="t-mono f-ink" font-size="12">example.com</text>
+        <rect x="16" y="86" width="120" height="8" rx="4" class="f-bg"/>
+        <rect x="16" y="104" width="90" height="8" rx="4" class="f-bg"/>
+        <text x="16" y="142" class="t-mono f-muted" font-size="10">CA CHECKS</text>
+        <text x="16" y="162" class="f-ok" font-size="12">✓ you control the domain</text>
+        <text x="16" y="214" class="f-muted" font-size="11">Minutes · automatic (ACME)</text>
+      </g>
+      <g transform="translate(270 15)">
+        <rect width="220" height="230" rx="12" class="f-paper s-line" stroke-width="2"/>
+        <rect width="220" height="40" rx="12" class="f-asoft"/><rect y="28" width="220" height="12" class="f-asoft"/>
+        <text x="16" y="26" class="t-disp f-accent" font-size="12">OV · Organisation Validated</text>
+        <text x="16" y="72" class="t-mono f-ink" font-size="12">example.com</text>
+        <text x="16" y="92" class="f-ink" font-size="12">Example Pty Ltd</text>
+        <rect x="16" y="104" width="90" height="8" rx="4" class="f-bg"/>
+        <text x="16" y="142" class="t-mono f-muted" font-size="10">CA CHECKS</text>
+        <text x="16" y="162" class="f-ok" font-size="12">✓ you control the domain</text>
+        <text x="16" y="180" class="f-ok" font-size="12">✓ the company exists</text>
+        <text x="16" y="214" class="f-muted" font-size="11">1–3 days</text>
+      </g>
+      <g transform="translate(525 15)">
+        <rect width="220" height="230" rx="12" class="f-paper s-line" stroke-width="2"/>
+        <rect width="220" height="40" rx="12" class="f-accent"/><rect y="28" width="220" height="12" class="f-accent"/>
+        <text x="16" y="26" class="t-disp" font-size="12" style="fill:var(--paper)">EV · Extended Validation</text>
+        <text x="16" y="72" class="t-mono f-ink" font-size="12">example.com</text>
+        <text x="16" y="92" class="f-ink" font-size="12">Example Pty Ltd</text>
+        <text x="16" y="110" class="f-muted" font-size="11">Reg. no · address · country</text>
+        <text x="16" y="142" class="t-mono f-muted" font-size="10">CA CHECKS</text>
+        <text x="16" y="162" class="f-ok" font-size="12">✓ you control the domain</text>
+        <text x="16" y="180" class="f-ok" font-size="12">✓ the company exists</text>
+        <text x="16" y="198" class="f-ok" font-size="12">✓ legal and address checks</text>
+        <text x="16" y="218" class="f-muted" font-size="11">Days to weeks</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>All three types give the same encryption and the same padlock in browsers now. eMudhra had a weak intermediate for each type (EM DV, EM OV and EM EV TLS CA).</figcaption>
+  </figure>
+
+  <h3>2. By what the certificate is for</h3>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Type</th><th>Use</th><th>Example</th><th>In this incident</th></tr></thead>
+      <tbody>
+        <tr><td class="k">TLS server</td><td>Proves the name of a website or API</td><td><span class="mono">https://bank.com</span></td><td><span class="pill bad">6 weak intermediates</span></td></tr>
+        <tr><td class="k">Code signing</td><td>Proves who made a program, and that nobody changed it</td><td>Windows apps and drivers</td><td><span class="pill bad">2 weak intermediates</span></td></tr>
+        <tr><td class="k">TLS client</td><td>Proves the name of a device or user to a server (mTLS)</td><td>Company VPN, IoT devices</td><td><span class="pill ok">Not affected</span></td></tr>
+        <tr><td class="k">S/MIME email</td><td>Signs and encrypts email</td><td>Signed company email</td><td><span class="pill ok">Not affected</span></td></tr>
+        <tr><td class="k">Document signing</td><td>Signs PDFs and forms</td><td>Indian Digital Signature Certificates for tax forms</td><td><span class="pill ok">Not affected</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h3>3. By how many names</h3>
+      <ul>
+        <li><b>Single name:</b> <span class="mono">www.example.com</span></li>
+        <li><b>Wildcard:</b> <span class="mono">*.example.com</span> covers all first-level names</li>
+        <li><b>Multi-domain (SAN):</b> one certificate for a list of names</li>
+      </ul></div>
+    <div class="card"><h3>4. By key type</h3>
+      <ul>
+        <li><b>RSA:</b> 2048 to 4096 bits. Old and common.</li>
+        <li><b>ECC:</b> P-256 or P-384. Smaller and faster.</li>
+        <li>The weak eMudhra keys were all ECC P-384. Its RSA keys were correct.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- WHAT IS NEEDED -->
+<section>
+  <span class="eyebrow">Part 4</span>
+  <h2>What is necessary to make CA keys</h2>
+  <p>A CA does not make its keys on a usual computer. The rules tell it to use special equipment, a secure room and a team of trusted persons.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 360" role="img" aria-labelledby="rm-t" style="min-width:560px">
+      <title id="rm-t">A key ceremony room with an HSM, an offline laptop, smart cards, key custodians, a ceremony leader, an auditor, a camera, a script and a safe</title>
+      <rect x="10" y="10" width="740" height="340" rx="16" class="f-bg s-line" stroke-width="3"/>
+      <rect x="340" y="344" width="80" height="12" class="f-bg"/>
+      <text x="380" y="338" text-anchor="middle" class="f-muted" font-size="10">door · access log</text>
+      <g transform="translate(30 28)">
+        <rect width="34" height="22" rx="4" class="f-ink"/>
+        <path d="M34 6 L48 0 V22 L34 16Z" class="f-ink"/>
+        <circle cx="8" cy="8" r="3" class="f-alert"/>
+        <text x="0" y="40" class="f-muted" font-size="10">video records all steps</text>
+      </g>
+      <text x="380" y="34" text-anchor="middle" class="f-ink" font-size="11">Key custodians: each person holds one smart card</text>
+      <g class="f-accent">
+        <circle cx="300" cy="58" r="12"/><rect x="284" y="72" width="32" height="26" rx="13"/>
+        <circle cx="380" cy="58" r="12"/><rect x="364" y="72" width="32" height="26" rx="13"/>
+        <circle cx="460" cy="58" r="12"/><rect x="444" y="72" width="32" height="26" rx="13"/>
+      </g>
+      <rect x="220" y="115" width="320" height="135" rx="12" class="f-paper s-line" stroke-width="2"/>
+      <rect x="240" y="135" width="120" height="70" rx="8" class="f-ink"/>
+      <rect x="246" y="141" width="10" height="10" rx="2" class="f-gold"/>
+      <text x="300" y="168" text-anchor="middle" class="t-mono" font-size="14" style="fill:var(--paper)">HSM</text>
+      <text x="300" y="188" text-anchor="middle" font-size="9" style="fill:var(--paper)">tamper seals</text>
+      <line x1="360" y1="170" x2="385" y2="170" class="s-muted" stroke-width="2"/>
+      <rect x="390" y="134" width="120" height="62" rx="4" class="f-line s-muted"/>
+      <rect x="380" y="196" width="140" height="10" rx="3" class="f-muted"/>
+      <text x="450" y="163" text-anchor="middle" class="f-ink" font-size="11">offline laptop</text>
+      <text x="450" y="180" text-anchor="middle" class="f-muted" font-size="9">no network</text>
+      <g class="f-gold">
+        <rect x="250" y="220" width="26" height="17" rx="3"/><rect x="284" y="220" width="26" height="17" rx="3"/><rect x="318" y="220" width="26" height="17" rx="3"/>
+      </g>
+      <text x="354" y="233" class="f-muted" font-size="10">smart cards (3 of 5)</text>
+      <g class="f-accent"><circle cx="160" cy="166" r="12"/><rect x="144" y="180" width="32" height="26" rx="13"/></g>
+      <text x="160" y="226" text-anchor="middle" class="f-ink" font-size="11">Ceremony leader</text>
+      <text x="160" y="240" text-anchor="middle" class="f-muted" font-size="10">reads the script</text>
+      <g class="f-gold"><circle cx="610" cy="166" r="12"/><rect x="594" y="180" width="32" height="26" rx="13"/></g>
+      <text x="610" y="226" text-anchor="middle" class="f-ink" font-size="11">Auditor (witness)</text>
+      <text x="610" y="240" text-anchor="middle" class="f-muted" font-size="10">checks each step</text>
+      <g transform="translate(40 268)">
+        <rect width="50" height="62" rx="4" class="f-paper s-line" stroke-width="1.5"/>
+        <rect x="8" y="12" width="34" height="4" rx="2" class="f-line"/><rect x="8" y="22" width="30" height="4" rx="2" class="f-line"/>
+        <rect x="8" y="32" width="34" height="4" rx="2" class="f-line"/><rect x="8" y="42" width="24" height="4" rx="2" class="f-line"/>
+        <text x="62" y="28" class="f-ink" font-size="11">Written script</text>
+        <text x="62" y="44" class="f-muted" font-size="10">approved before the day</text>
+      </g>
+      <g transform="translate(626 268)">
+        <rect width="100" height="62" rx="6" class="f-muted"/>
+        <circle cx="50" cy="31" r="14" class="f-paper"/>
+        <line x1="50" y1="31" x2="58" y2="23" class="s-ink" stroke-width="3"/>
+      </g>
+      <text x="614" y="296" text-anchor="end" class="f-ink" font-size="11">Safe</text>
+      <text x="614" y="312" text-anchor="end" class="f-muted" font-size="10">backups and cards</text>
+    </svg>
+    </div>
+    <figcaption>A typical key ceremony room. No single person can use the HSM alone. A minimum number of card holders must be present.</figcaption>
+  </figure>
+  <div class="terms">
+    <div class="term"><b>HSM</b><span>A certified, tamper-resistant box (FIPS 140-2/140-3 Level 3 or Common Criteria EAL4+). It makes the key and keeps it inside.</span></div>
+    <div class="term"><b>True random source</b><span>A part of the HSM that makes unpredictable numbers. The private key comes from these numbers.</span></div>
+    <div class="term"><b>Offline computer</b><span>A laptop with no network. It sends commands to the HSM.</span></div>
+    <div class="term"><b>Secure room</b><span>A locked room with an access log. Only approved persons can go in.</span></div>
+    <div class="term"><b>Trusted persons</b><span>Staff with checked backgrounds. Each has one smart card. The HSM needs some of the cards (for example 3 of 5).</span></div>
+    <div class="term"><b>Written script</b><span>A list of each command and step. The team must not change it on the day without approval.</span></div>
+    <div class="term"><b>Witness and video</b><span>An independent auditor watches, or a camera records all steps.</span></div>
+    <div class="term"><b>Encrypted backup</b><span>A copy of the key, locked with a key that only the HSM can use. It goes in a safe.</span></div>
+  </div>
+</section>
+
+<!-- KEY GENERATION -->
+<section>
+  <span class="eyebrow">Part 5</span>
+  <h2>The key generation process</h2>
+  <p>The HSM makes a random private key. From the private key, it calculates the public key. The private key must never go out of the HSM.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 260" role="img" aria-labelledby="kg-t" style="min-width:560px">
+      <title id="kg-t">Inside the HSM a random number becomes the private key and then the public key; the public key goes into a request that the root signs; two checks follow</title>
+      <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <rect x="10" y="20" width="440" height="135" rx="12" fill="none" class="s-accent" stroke-width="2" stroke-dasharray="6 5"/>
+      <text x="24" y="40" class="t-mono f-accent" font-size="11">INSIDE THE HSM · THE PRIVATE KEY STAYS HERE</text>
+      <g class="f-paper s-ink" stroke-width="1.5">
+        <rect x="25" y="60" width="115" height="76" rx="10"/>
+        <rect x="165" y="60" width="115" height="76" rx="10"/>
+        <rect x="305" y="60" width="115" height="76" rx="10"/>
+        <rect x="470" y="60" width="120" height="76" rx="10"/>
+        <rect x="620" y="60" width="125" height="76" rx="10"/>
+      </g>
+      <text x="82" y="90" text-anchor="middle" class="t-disp f-ink" font-size="13">Random</text>
+      <text x="82" y="106" text-anchor="middle" class="t-disp f-ink" font-size="13">number</text>
+      <text x="82" y="124" text-anchor="middle" class="f-muted" font-size="10">true random source</text>
+      <text x="222" y="90" text-anchor="middle" class="t-disp f-alert" font-size="13">Private key d</text>
+      <text x="222" y="108" text-anchor="middle" class="f-muted" font-size="10">48 random bytes</text>
+      <text x="222" y="124" text-anchor="middle" class="f-muted" font-size="10">secret</text>
+      <text x="362" y="90" text-anchor="middle" class="t-disp f-accent" font-size="13">Public key</text>
+      <text x="362" y="110" text-anchor="middle" class="t-mono f-ink" font-size="11">d × G</text>
+      <text x="362" y="126" text-anchor="middle" class="f-muted" font-size="10">anyone can see</text>
+      <text x="530" y="90" text-anchor="middle" class="t-disp f-ink" font-size="13">CSR</text>
+      <text x="530" y="108" text-anchor="middle" class="f-muted" font-size="10">public key + name</text>
+      <text x="530" y="124" text-anchor="middle" class="f-muted" font-size="10">goes out</text>
+      <text x="682" y="90" text-anchor="middle" class="t-disp f-ink" font-size="13">Certificate</text>
+      <text x="682" y="108" text-anchor="middle" class="f-muted" font-size="10">the root signs</text>
+      <text x="682" y="124" text-anchor="middle" class="f-muted" font-size="10">the CSR</text>
+      <g class="s-muted" stroke-width="2">
+        <line x1="140" y1="98" x2="161" y2="98" marker-end="url(#ar5)"/>
+        <line x1="280" y1="98" x2="301" y2="98" marker-end="url(#ar5)"/>
+        <line x1="420" y1="98" x2="466" y2="98" marker-end="url(#ar5)"/>
+        <line x1="590" y1="98" x2="616" y2="98" marker-end="url(#ar5)"/>
+      </g>
+      <g fill="none" class="s-ok" stroke-width="2" stroke-dasharray="4 4">
+        <path d="M530 136 V170 H190 V188"/><path d="M530 170 H570 V188"/>
+      </g>
+      <rect x="10" y="188" width="360" height="58" rx="10" class="f-oksoft s-ok" stroke-width="2"/>
+      <rect x="390" y="188" width="360" height="58" rx="10" class="f-oksoft s-ok" stroke-width="2"/>
+      <text x="26" y="211" class="t-disp f-ok" font-size="13">Check A</text>
+      <text x="26" y="231" class="f-ink" font-size="12">The key in the CSR is the key in the HSM</text>
+      <text x="406" y="211" class="t-disp f-ok" font-size="13">Check B</text>
+      <text x="406" y="231" class="f-ink" font-size="12">Test the public key for weakness</text>
+    </svg>
+    </div>
+    <figcaption>Check A would show that eMudhra used the wrong key. Check B (for example, with paranoid_crypto) would show that the key was weak. eMudhra did not do these checks.</figcaption>
+  </figure>
+
+  <h3>Steps of a key ceremony</h3>
+  <ol class="steps">
+    <li><div>Write the ceremony script. Get approval from management and from the auditor.</div></li>
+    <li><div>Go into the secure room. Make sure that the tamper seals on the HSM and the laptop are not broken. Record the seal numbers.</div></li>
+    <li><div>Start the video recording. The leader reads each step aloud. The auditor watches each step.</div></li>
+    <li><div>Start the offline laptop. Make sure that it has no network connection.</div></li>
+    <li><div>Activate the HSM. The key custodians put in their smart cards.</div></li>
+    <li><div>Generate the key pair inside the HSM. Give the key a clear, unique label.</div></li>
+    <li><div>Make the CSR from the new key.</div></li>
+    <li class="miss"><div>Make sure that the public key in the CSR agrees with the key in the HSM. Test the public key for weakness. <span class="pill bad">eMudhra did not do this</span></div></li>
+    <li><div>Sign the certificate. A root signs itself. For an intermediate, the offline root HSM signs the CSR.</div></li>
+    <li><div>Make an encrypted backup of the key. Put the backup and the smart cards in the safe.</div></li>
+    <li><div>Stop the HSM. Put new tamper seals on the equipment. Stop the recording.</div></li>
+    <li><div>All persons sign the ceremony record. The auditor writes the key generation report.</div></li>
+  </ol>
+  <div class="note warn">
+    <b class="tag">Where eMudhra's process failed</b>
+    <p>eMudhra added an extra step to the script (the wrap and unwrap test). This step made a second, weak key with an almost identical label. In step 7, staff used the weak key. Nobody did step 8. A process audit checks that the team follows the script. It does not check the key itself.</p>
+  </div>
+</section>
+
+<!-- WHO MAKES WHAT -->
+<section>
+  <span class="eyebrow">Part 6</span>
+  <h2>Who makes what, and how it is used</h2>
+  <p>Five groups make the parts of the system. Each group has one job. The drawing shows how the parts move between them.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 390" role="img" aria-labelledby="wm-t" style="min-width:560px">
+      <title id="wm-t">How the CA, the website owner, the root program, the CT logs and your browser exchange keys, requests, certificates and root lists</title>
+      <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <!-- boxes -->
+      <rect x="280" y="16" width="200" height="74" rx="12" class="f-asoft s-accent" stroke-width="2"/>
+      <text x="380" y="44" text-anchor="middle" class="t-disp f-ink" font-size="15">Root program</text>
+      <text x="380" y="62" text-anchor="middle" class="f-muted" font-size="10">Mozilla · Google · Apple · Microsoft</text>
+      <text x="380" y="78" text-anchor="middle" class="f-accent t-mono" font-size="10">makes: the root list</text>
+
+      <rect x="20" y="150" width="190" height="96" rx="12" class="f-paper s-ink" stroke-width="2"/>
+      <text x="115" y="176" text-anchor="middle" class="t-disp f-ink" font-size="15">Certificate Authority</text>
+      <text x="115" y="194" text-anchor="middle" class="f-muted" font-size="10">Let's Encrypt · eMudhra</text>
+      <text x="115" y="214" text-anchor="middle" class="f-accent t-mono" font-size="10">makes: root + intermediate</text>
+      <text x="115" y="230" text-anchor="middle" class="f-accent t-mono" font-size="10">signs: certificates, CRLs</text>
+
+      <rect x="550" y="150" width="190" height="96" rx="12" class="f-paper s-ink" stroke-width="2"/>
+      <text x="645" y="176" text-anchor="middle" class="t-disp f-ink" font-size="15">Website owner</text>
+      <text x="645" y="194" text-anchor="middle" class="f-muted" font-size="10">shop.example.com</text>
+      <text x="645" y="214" text-anchor="middle" class="f-accent t-mono" font-size="10">makes: website key + CSR</text>
+      <text x="645" y="230" text-anchor="middle" class="f-accent t-mono" font-size="10">installs: certificate</text>
+
+      <rect x="20" y="300" width="190" height="70" rx="12" class="f-bg s-line" stroke-width="2"/>
+      <text x="115" y="326" text-anchor="middle" class="t-disp f-ink" font-size="15">CT logs</text>
+      <text x="115" y="344" text-anchor="middle" class="f-muted" font-size="10">Google · Cloudflare · others</text>
+      <text x="115" y="360" text-anchor="middle" class="f-accent t-mono" font-size="10">keeps: public list of all certs</text>
+
+      <rect x="280" y="296" width="200" height="78" rx="12" class="f-oksoft s-ok" stroke-width="2"/>
+      <text x="380" y="322" text-anchor="middle" class="t-disp f-ink" font-size="15">Your browser</text>
+      <text x="380" y="340" text-anchor="middle" class="f-muted" font-size="10">Chrome · Firefox · a Go program</text>
+      <text x="380" y="358" text-anchor="middle" class="f-ok t-mono" font-size="10">checks: chain → root list</text>
+
+      <!-- arrows -->
+      <g fill="none" class="s-muted" stroke-width="2">
+        <path d="M115 150 V53 H274" marker-end="url(#ar6)"/>
+        <path d="M380 90 V290" marker-end="url(#ar6)"/>
+        <path d="M550 180 H216" marker-end="url(#ar6)"/>
+        <path d="M210 216 H544" marker-end="url(#ar6)"/>
+        <path d="M115 246 V294" marker-end="url(#ar6)"/>
+        <path d="M645 246 V335 H486" marker-end="url(#ar6)"/>
+      </g>
+      <!-- numbered labels -->
+      <g font-size="10" class="f-ink">
+        <circle cx="130" cy="112" r="9" class="f-accent"/><text x="130" y="116" text-anchor="middle" style="fill:var(--paper)">1</text>
+        <text x="144" y="116">root + audit report</text>
+        <circle cx="395" cy="128" r="9" class="f-accent"/><text x="395" y="132" text-anchor="middle" style="fill:var(--paper)">2</text>
+        <text x="409" y="132">root list in updates</text>
+        <circle cx="470" cy="170" r="9" class="f-accent"/><text x="470" y="174" text-anchor="middle" style="fill:var(--paper)">3</text>
+        <text x="440" y="174" text-anchor="end">CSR</text>
+        <circle cx="240" cy="230" r="9" class="f-accent"/><text x="240" y="234" text-anchor="middle" style="fill:var(--paper)">4</text>
+        <text x="254" y="234">signed certificate</text>
+        <circle cx="130" cy="270" r="9" class="f-accent"/><text x="130" y="274" text-anchor="middle" style="fill:var(--paper)">5</text>
+        <text x="144" y="274">records the cert</text>
+        <circle cx="520" cy="322" r="9" class="f-accent"/><text x="520" y="326" text-anchor="middle" style="fill:var(--paper)">6</text>
+        <text x="534" y="326">cert + intermediate</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>1: The CA asks the root programs to accept its root. 2: The root programs put the root in their lists. 3–4: A website owner sends a CSR and gets a certificate. 5: The CA records it in public logs. 6: The website sends the certificate to your browser at each connection.</figcaption>
+  </figure>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Item</th><th>Who makes it</th><th>Where it is kept</th><th>How it is used</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Root key and certificate</td><td>The CA, in a key ceremony</td><td>Key: offline HSM. Certificate: in each device</td><td>Signs intermediates a few times each year<span class="ex">ISRG Root X1</span></td></tr>
+        <tr><td class="k">Intermediate key and certificate</td><td>The CA, in a key ceremony. The root signs it</td><td>Key: online HSM at the CA</td><td>Signs customer certificates all day<span class="ex">Let's Encrypt R11</span></td></tr>
+        <tr><td class="k">Website key pair</td><td>The website owner, or a tool on the server</td><td>The web server</td><td>Proves in each connection that the server owns the certificate<span class="ex">made by Certbot</span></td></tr>
+        <tr><td class="k">CSR</td><td>The website owner</td><td>Sent to the CA once</td><td>Asks the CA for a certificate<span class="ex">openssl req</span></td></tr>
+        <tr><td class="k">Website certificate</td><td>The CA (the intermediate signs it)</td><td>The web server</td><td>Sent to each browser that connects<span class="ex">shop.example.com</span></td></tr>
+        <tr><td class="k">CT log entry</td><td>The CA sends it. Log operators keep it</td><td>Public logs</td><td>All persons can see all certificates. Chrome and Safari require it<span class="ex">search at crt.sh</span></td></tr>
+        <tr><td class="k">CRL and OCSP</td><td>The CA</td><td>The CA's web servers</td><td>Tells software which certificates are revoked<span class="ex">crl.emsign.com</span></td></tr>
+        <tr><td class="k">Root list (trust store)</td><td>The root programs</td><td>Browsers and operating systems</td><td>Decides which roots to trust<span class="ex">Mozilla NSS, Chrome Root Store</span></td></tr>
+        <tr><td class="k">Fast block list</td><td>The browser makers</td><td>Pushed to browsers in hours</td><td>Blocks bad intermediates without a full update<span class="ex">OneCRL, CRLSet</span></td></tr>
+        <tr><td class="k">Copied root lists</td><td>Package maintainers</td><td>Inside packages and programs</td><td>The root list for programs that are not browsers<span class="ex">certifi, ca-certificates, webpki-roots</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Example: a new website gets a certificate</h3>
+  <ol class="steps">
+    <li><div>Priya owns <span class="mono">shop.example.com</span>. She runs Certbot on her server.</div></li>
+    <li><div>Certbot makes a new key pair on the server. The private key stays on the server.</div></li>
+    <li><div>Certbot sends a CSR to Let's Encrypt.</div></li>
+    <li><div>Let's Encrypt asks Certbot to put a test file on the website. This proves that Priya controls the domain.</div></li>
+    <li><div>The Let's Encrypt intermediate (for example R11) signs the certificate. Let's Encrypt records it in the CT logs.</div></li>
+    <li><div>Certbot installs the certificate and the intermediate. Each 60 to 90 days, Certbot does all the steps again.</div></li>
+    <li><div>You open the shop. Your browser gets the certificate and R11. It finds ISRG Root X1 in its root list and shows the padlock.</div></li>
+  </ol>
+<pre class="code"><span class="c"># Step 2 and 3, made by hand with OpenSSL</span>
+openssl ecparam -genkey -name prime256v1 -out shop.key   <span class="c"># private key: keep it secret</span>
+openssl req -new -key shop.key -subj "/CN=shop.example.com" -out shop.csr   <span class="c"># CSR: send to the CA</span>
+
+<span class="c"># Or let Certbot do all the steps</span>
+sudo certbot --nginx -d shop.example.com</pre>
+
+  <h3>Example: see a real chain</h3>
+  <p>You can see the chain that any website sends. Run this command:</p>
+<pre class="code">openssl s_client -connect www.google.com:443 -showcerts &lt;/dev/null | grep -E "^ *[0-9] s:|i:"
+
+ 0 s:CN = www.google.com
+   i:C = US, O = Google Trust Services, CN = WR2          <span class="c"># the intermediate signed it</span>
+ 1 s:C = US, O = Google Trust Services, CN = WR2
+   i:C = US, O = Google Trust Services LLC, CN = GTS Root R1   <span class="c"># the root signed WR2</span></pre>
+  <p class="muted">"s" is the subject (who the certificate is for). "i" is the issuer (who signed it). The root is not in the output, because your device already has it. The names can change when Google changes its certificates.</p>
+
+  <h3>Example: the same parts in the eMudhra incident</h3>
+  <div class="grid2">
+    <div class="card"><h3>Who made the error</h3>
+      <p>The CA (eMudhra) made the intermediate keys in its key ceremony. The weak keys came from that step. The website owners, root programs and browsers did nothing wrong.</p></div>
+    <div class="card"><h3>Who made the fix</h3>
+      <ul>
+        <li>Browser makers: block lists (OneCRL, CRLSet)</li>
+        <li>Root programs: removed the G3 root</li>
+        <li>Package maintainers: new certifi, ca-certificates, Go</li>
+        <li>CAs: eMudhra and Sectigo revoked the certificates</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- HOW IT HAPPENED -->
+<section>
+  <span class="eyebrow">Part 7</span>
+  <h2>How the error occurred</h2>
+  <p>On 30 April 2025, eMudhra did a "key ceremony". In a key ceremony, staff use an HSM to make new CA keys. They made 24 intermediate certificates that day.</p>
+  <p>The 24 keys were in three series (A, B and C). Each series had RSA keys and ECC (P-384) keys. The eight weak keys are all the ECC keys in series B and C.</p>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 330" role="img" aria-labelledby="k-t" style="min-width:560px">
+      <title id="k-t">The HSM made a strong key and a weak key; staff used the weak key by mistake</title>
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <!-- HSM -->
+      <g transform="translate(20 70)">
+        <rect width="170" height="190" rx="14" class="f-ink"/>
+        <rect x="14" y="14" width="142" height="40" rx="6" class="f-accent"/>
+        <text x="85" y="40" text-anchor="middle" class="t-mono" font-size="13" style="fill:var(--paper)">HSM</text>
+        <circle cx="30" cy="80" r="6" class="f-ok"/><circle cx="50" cy="80" r="6" class="f-gold"/>
+        <rect x="14" y="100" width="142" height="8" rx="4" class="f-muted"/>
+        <rect x="14" y="116" width="142" height="8" rx="4" class="f-muted"/>
+        <rect x="14" y="132" width="142" height="8" rx="4" class="f-muted"/>
+        <text x="85" y="172" text-anchor="middle" font-size="11" class="f-bg">Utimaco · FIPS 140-2 L3</text>
+      </g>
+      <!-- script -->
+      <g transform="translate(205 20)">
+        <rect width="160" height="44" rx="8" class="f-alsoft s-alert" stroke-width="2"/>
+        <text x="80" y="20" text-anchor="middle" class="t-mono f-alert" font-size="11">script with error</text>
+        <text x="80" y="35" text-anchor="middle" class="f-ink" font-size="10">(wrap / unwrap test)</text>
+      </g>
+      <line x1="285" y1="66" x2="210" y2="92" class="s-alert" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#ar2)"/>
+      <!-- two keys -->
+      <line x1="195" y1="120" x2="320" y2="110" class="s-muted" stroke-width="2" marker-end="url(#ar2)"/>
+      <line x1="195" y1="210" x2="320" y2="225" class="s-muted" stroke-width="2" marker-end="url(#ar2)"/>
+      <g transform="translate(330 80)">
+        <rect width="190" height="60" rx="10" class="f-oksoft s-ok" stroke-width="2"/>
+        <text x="16" y="25" class="t-disp f-ok" font-size="14">Key 1: strong</text>
+        <text x="16" y="44" class="t-mono f-ink" font-size="10">"EM-DV-G3B"</text>
+      </g>
+      <g transform="translate(330 195)">
+        <rect width="190" height="60" rx="10" class="f-alsoft s-alert" stroke-width="2"/>
+        <text x="16" y="25" class="t-disp f-alert" font-size="14">Key 2: weak (&lt; 256)</text>
+        <text x="16" y="44" class="t-mono f-ink" font-size="10">"EM-DV-G3B_"</text>
+      </g>
+      <text x="425" y="175" text-anchor="middle" class="f-muted" font-size="11">Labels almost the same</text>
+      <!-- CSR -->
+      <line x1="525" y1="225" x2="585" y2="225" class="s-alert" stroke-width="3" marker-end="url(#ar2)"/>
+      <text x="555" y="214" text-anchor="middle" class="f-alert" font-size="11">used by mistake</text>
+      <g transform="translate(595 160)">
+        <rect width="150" height="130" rx="10" class="f-paper s-line" stroke-width="2"/>
+        <text x="75" y="26" text-anchor="middle" class="t-disp f-ink" font-size="14">Certificate request</text>
+        <text x="75" y="48" text-anchor="middle" class="f-muted" font-size="11">signed by eMudhra root</text>
+        <text x="75" y="66" text-anchor="middle" class="f-muted" font-size="11">and by Sectigo</text>
+        <rect x="45" y="80" width="60" height="36" rx="18" class="f-alert"/>
+        <text x="75" y="103" text-anchor="middle" class="t-mono" font-size="12" style="fill:var(--paper)">WEAK</text>
+      </g>
+      <text x="380" y="315" text-anchor="middle" class="f-muted" font-size="11">The key labels in this drawing are examples. They are not the real labels.</text>
+    </svg>
+    </div>
+    <figcaption>eMudhra's explanation: a script error made a second, weak key. Staff used the weak key to make the certificate requests.</figcaption>
+  </figure>
+
+  <ol class="steps">
+    <li><div>eMudhra changed its usual procedure. It added a test that wraps and unwraps keys, because these keys had to go to data centres in Europe and the USA.</div></li>
+    <li><div>The HSM made the correct, strong ECC keys.</div></li>
+    <li><div>An error in the script made a second set of ECC keys. These keys were very weak.</div></li>
+    <li><div>The labels of the strong keys and the weak keys were almost the same. Staff used the weak keys by mistake.</div></li>
+    <li><div>The eMudhra root signed the eight weak keys. In May 2025, Sectigo also cross-signed them.</div></li>
+  </ol>
+
+  <div class="note">
+    <b class="tag">Another possible cause</b>
+    <p>Some experts think that the HSM software wrote a "reference" key file to disk. This file only points to the real key inside the HSM. They think that a tool used this small reference number as a real private key. eMudhra has not yet given a full root-cause report.</p>
+  </div>
+
+  <div class="note warn">
+    <b class="tag">The warning sign that eMudhra missed</b>
+    <p>In May 2025, the lists of revoked certificates (CRLs) from these six TLS intermediates had bad signatures (Mozilla bug 1970728). The real HSM key signed the lists, but the certificates had the weak public key. So the signatures did not agree. eMudhra then signed the lists again with the weak keys. It did not find the real problem.</p>
+  </div>
+</section>
+
+<!-- WHY WEAK -->
+<section>
+  <span class="eyebrow">Part 8</span>
+  <h2>Why the keys were so weak</h2>
+  <p>A P-384 private key must be a random number between 1 and a very large number. That large number has 116 digits. Nobody can guess it.</p>
+  <p>Each of the eight weak keys was a number less than 256. In computer memory, the key was all zeros, with only the last byte different.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 200" role="img" aria-labelledby="w-t" style="min-width:560px">
+      <title id="w-t">Comparison of the size of a correct key and the weak keys</title>
+      <text x="20" y="34" class="t-disp f-ink" font-size="15">Correct P-384 key: 48 random bytes</text>
+      <g transform="translate(20 46)">
+        <!-- 48 cells -->
+      </g>
+      <g transform="translate(20 46)" class="f-accent">
+        <!-- generated row -->
+        <rect x="0" width="13" height="30" rx="2"/><rect x="15" width="13" height="30" rx="2"/><rect x="30" width="13" height="30" rx="2"/><rect x="45" width="13" height="30" rx="2"/><rect x="60" width="13" height="30" rx="2"/><rect x="75" width="13" height="30" rx="2"/><rect x="90" width="13" height="30" rx="2"/><rect x="105" width="13" height="30" rx="2"/><rect x="120" width="13" height="30" rx="2"/><rect x="135" width="13" height="30" rx="2"/><rect x="150" width="13" height="30" rx="2"/><rect x="165" width="13" height="30" rx="2"/><rect x="180" width="13" height="30" rx="2"/><rect x="195" width="13" height="30" rx="2"/><rect x="210" width="13" height="30" rx="2"/><rect x="225" width="13" height="30" rx="2"/><rect x="240" width="13" height="30" rx="2"/><rect x="255" width="13" height="30" rx="2"/><rect x="270" width="13" height="30" rx="2"/><rect x="285" width="13" height="30" rx="2"/><rect x="300" width="13" height="30" rx="2"/><rect x="315" width="13" height="30" rx="2"/><rect x="330" width="13" height="30" rx="2"/><rect x="345" width="13" height="30" rx="2"/><rect x="360" width="13" height="30" rx="2"/><rect x="375" width="13" height="30" rx="2"/><rect x="390" width="13" height="30" rx="2"/><rect x="405" width="13" height="30" rx="2"/><rect x="420" width="13" height="30" rx="2"/><rect x="435" width="13" height="30" rx="2"/><rect x="450" width="13" height="30" rx="2"/><rect x="465" width="13" height="30" rx="2"/><rect x="480" width="13" height="30" rx="2"/><rect x="495" width="13" height="30" rx="2"/><rect x="510" width="13" height="30" rx="2"/><rect x="525" width="13" height="30" rx="2"/><rect x="540" width="13" height="30" rx="2"/><rect x="555" width="13" height="30" rx="2"/><rect x="570" width="13" height="30" rx="2"/><rect x="585" width="13" height="30" rx="2"/><rect x="600" width="13" height="30" rx="2"/><rect x="615" width="13" height="30" rx="2"/><rect x="630" width="13" height="30" rx="2"/><rect x="645" width="13" height="30" rx="2"/><rect x="660" width="13" height="30" rx="2"/><rect x="675" width="13" height="30" rx="2"/><rect x="690" width="13" height="30" rx="2"/><rect x="705" width="13" height="30" rx="2"/>
+      </g>
+      <text x="20" y="96" class="t-mono f-muted" font-size="11">about 10^115 possible keys · all computers on Earth cannot try them all</text>
+
+      <text x="20" y="134" class="t-disp f-ink" font-size="15">eMudhra weak key: 47 zero bytes + 1 byte</text>
+      <g transform="translate(20 146)" class="f-line">
+        <rect x="0" width="13" height="30" rx="2"/><rect x="15" width="13" height="30" rx="2"/><rect x="30" width="13" height="30" rx="2"/><rect x="45" width="13" height="30" rx="2"/><rect x="60" width="13" height="30" rx="2"/><rect x="75" width="13" height="30" rx="2"/><rect x="90" width="13" height="30" rx="2"/><rect x="105" width="13" height="30" rx="2"/><rect x="120" width="13" height="30" rx="2"/><rect x="135" width="13" height="30" rx="2"/><rect x="150" width="13" height="30" rx="2"/><rect x="165" width="13" height="30" rx="2"/><rect x="180" width="13" height="30" rx="2"/><rect x="195" width="13" height="30" rx="2"/><rect x="210" width="13" height="30" rx="2"/><rect x="225" width="13" height="30" rx="2"/><rect x="240" width="13" height="30" rx="2"/><rect x="255" width="13" height="30" rx="2"/><rect x="270" width="13" height="30" rx="2"/><rect x="285" width="13" height="30" rx="2"/><rect x="300" width="13" height="30" rx="2"/><rect x="315" width="13" height="30" rx="2"/><rect x="330" width="13" height="30" rx="2"/><rect x="345" width="13" height="30" rx="2"/><rect x="360" width="13" height="30" rx="2"/><rect x="375" width="13" height="30" rx="2"/><rect x="390" width="13" height="30" rx="2"/><rect x="405" width="13" height="30" rx="2"/><rect x="420" width="13" height="30" rx="2"/><rect x="435" width="13" height="30" rx="2"/><rect x="450" width="13" height="30" rx="2"/><rect x="465" width="13" height="30" rx="2"/><rect x="480" width="13" height="30" rx="2"/><rect x="495" width="13" height="30" rx="2"/><rect x="510" width="13" height="30" rx="2"/><rect x="525" width="13" height="30" rx="2"/><rect x="540" width="13" height="30" rx="2"/><rect x="555" width="13" height="30" rx="2"/><rect x="570" width="13" height="30" rx="2"/><rect x="585" width="13" height="30" rx="2"/><rect x="600" width="13" height="30" rx="2"/><rect x="615" width="13" height="30" rx="2"/><rect x="630" width="13" height="30" rx="2"/><rect x="645" width="13" height="30" rx="2"/><rect x="660" width="13" height="30" rx="2"/><rect x="675" width="13" height="30" rx="2"/><rect x="690" width="13" height="30" rx="2"/>
+        <rect x="705" width="13" height="30" rx="2" class="f-alert"/>
+      </g>
+      <text x="20" y="194" class="t-mono f-alert" font-size="11">only 255 possible keys · a computer tries all of them in milliseconds</text>
+    </svg>
+    </div>
+    <figcaption>Each square is one byte. Grey squares are zero. One researcher found that the key of "EM DV TLS CA – G3B" was the number 156.</figcaption>
+  </figure>
+  <p>To find the key, a person makes the first 255 P-384 keys. Then the person compares each one with the public key in the certificate. One will agree. This takes less than one second.</p>
+</section>
+
+<!-- ATTACK -->
+<section>
+  <span class="eyebrow">Part 9</span>
+  <h2>What an attacker can do with the key</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 240" role="img" aria-labelledby="a-t" style="min-width:560px">
+      <title id="a-t">Attacker signs a fake certificate and sits between you and the real website</title>
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <!-- you -->
+      <g transform="translate(30 70)">
+        <circle cx="45" cy="30" r="22" class="f-accent"/>
+        <rect x="15" y="58" width="60" height="50" rx="20" class="f-accent"/>
+        <text x="45" y="135" text-anchor="middle" class="t-disp f-ink" font-size="14">You</text>
+      </g>
+      <!-- wifi attacker -->
+      <g transform="translate(300 40)">
+        <rect width="160" height="150" rx="14" class="f-alsoft s-alert" stroke-width="2"/>
+        <path d="M50 50 a42 42 0 0 1 60 0" fill="none" class="s-alert" stroke-width="5" stroke-linecap="round"/>
+        <path d="M62 62 a24 24 0 0 1 36 0" fill="none" class="s-alert" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="80" cy="76" r="5" class="f-alert"/>
+        <text x="80" y="108" text-anchor="middle" class="t-disp f-alert" font-size="14">Attacker</text>
+        <text x="80" y="126" text-anchor="middle" class="f-ink" font-size="11">fake Wi-Fi or bad router</text>
+      </g>
+      <!-- fake cert -->
+      <g transform="translate(320 196)">
+        <rect width="120" height="34" rx="6" class="f-paper s-alert" stroke-width="2"/>
+        <text x="60" y="22" text-anchor="middle" class="t-mono f-alert" font-size="11">fake bank cert ✓</text>
+      </g>
+      <!-- bank -->
+      <g transform="translate(610 70)">
+        <rect width="120" height="100" rx="10" class="f-paper s-line" stroke-width="2"/>
+        <path d="M20 40 L60 18 L100 40 Z" class="f-muted"/>
+        <rect x="28" y="44" width="10" height="34" class="f-muted"/><rect x="55" y="44" width="10" height="34" class="f-muted"/><rect x="82" y="44" width="10" height="34" class="f-muted"/>
+        <text x="60" y="130" text-anchor="middle" class="t-disp f-ink" font-size="14">Real bank</text>
+      </g>
+      <line x1="130" y1="115" x2="290" y2="115" class="s-muted" stroke-width="2" marker-end="url(#ar3)"/>
+      <text x="210" y="105" text-anchor="middle" class="f-muted" font-size="11">your password</text>
+      <line x1="470" y1="115" x2="600" y2="115" class="s-muted" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar3)"/>
+      <text x="535" y="105" text-anchor="middle" class="f-muted" font-size="11">copied on</text>
+    </svg>
+    </div>
+    <figcaption>The attacker signs a new certificate for the bank's name with the leaked key. Old software shows the padlock and does not warn you.</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card bad"><h3>What the attacker needs</h3>
+      <p>The leaked key (easy to get), and control of your network connection. Examples are a fake Wi-Fi hotspot, a bad router, or DNS tricks.</p></div>
+    <div class="card good"><h3>What makes the risk lower</h3>
+      <p>eMudhra says that the eight intermediates did not issue certificates to customers. Chrome found no fake certificates in the public Certificate Transparency logs. No attack is known at this time.</p></div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section>
+  <span class="eyebrow">Part 10</span>
+  <h2>Sequence of events</h2>
+  <p class="muted">All times are UTC.</p>
+  <ul class="tl">
+    <li class="day">2025</li>
+    <li class="bad"><time>30 Apr 2025</time><span>eMudhra makes 24 intermediates in one key ceremony. Eight ECC keys are weak.</span></li>
+    <li class="bad"><time>May 2025</time><span>Sectigo cross-signs the eight. CRL signatures from the six TLS intermediates fail. eMudhra signs them again with the weak keys.</span></li>
+
+    <li class="day">Saturday 17 October 2026</li>
+    <li class="bad"><time>16:27</time><span>Researcher "Wayne" tests the public CA list (CCADB) with Google's free "paranoid_crypto" tool. The tool finds the weak keys.</span></li>
+    <li><time>18:05</time><span>Wayne sends a report and signed proof to Apple, Chrome, Microsoft, Mozilla and eMudhra.</span></li>
+    <li class="good"><time>19:45</time><span>Chrome confirms the problem. It blocks the six TLS keys with a CRLSet update.</span></li>
+    <li><time>20:06</time><span>Mozilla gets the report.</span></li>
+    <li><time>21:28</time><span>eMudhra replies. It stops the one intermediate that was in use.</span></li>
+    <li><time>21:48</time><span>Mozilla finds the keys without help from Wayne. This proves that the flaw is easy to use.</span></li>
+    <li class="good"><time>22:59</time><span>Mozilla blocks the certificates in Firefox with OneCRL.</span></li>
+
+    <li class="day">18 – 19 October</li>
+    <li class="good"><time>18 Oct 09:38</time><span>eMudhra revokes all eight certificates (reason: CA compromise).</span></li>
+    <li class="good"><time>19 Oct</time><span>Sectigo revokes its eight cross-signed copies. Apple blocks the certificates. Python's certifi package removes the root.</span></li>
+
+    <li class="day">Tuesday 20 October</li>
+    <li class="bad"><time>20 Oct</time><span>Many persons find the keys. Some publish them on the internet.</span></li>
+    <li class="good"><time>20 Oct</time><span>Microsoft blocks the certificates. Mozilla tells the public. Mozilla removes "emSign ECC Root CA – G3" from NSS 3.131.1. Firefox 158.0.1 and new Go versions are released. Chrome says that it will also remove the root.</span></li>
+
+    <li class="day">21 October and after</li>
+    <li><time>20 – 21 Oct</time><span>eMudhra stops all issue under the G3 root. About 30,000 customer certificates must move to its RSA root (G1).</span></li>
+    <li class="good"><time>21 Oct</time><span>Firefox for Android 158.0.2 fixes a bug that stopped the block list on some phones.</span></li>
+    <li><time>27 Oct (expected)</time><span>Chrome's removal of the G3 root gets to all devices.</span></li>
+  </ul>
+</section>
+
+<!-- WHO AT RISK -->
+<section>
+  <span class="eyebrow">Part 11</span>
+  <h2>Who is safe and who is at risk</h2>
+  <p>Browsers get block lists in a few hours. Many other programs do not. They keep their own copy of the root list. They also do not check revocation. For them, only the removal of the root gives protection.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Software</th><th>Status</th><th>Fixed version</th></tr></thead>
+      <tbody>
+        <tr><td>Chrome, Firefox (desktop), Safari, Edge</td><td><span class="pill ok">Protected</span></td><td>Automatic block list</td></tr>
+        <tr><td>Firefox for Android</td><td><span class="pill ok">Protected after update</span></td><td class="v">158.0.2</td></tr>
+        <tr><td>NSS (Mozilla root list)</td><td><span class="pill ok">Fixed</span></td><td class="v">3.131.1</td></tr>
+        <tr><td>Python <span class="mono">certifi</span></td><td><span class="pill mid">Update it</span></td><td class="v">2026.10.19</td></tr>
+        <tr><td>Go</td><td><span class="pill mid">Update it</span></td><td class="v">1.27.3 / 1.26.10</td></tr>
+        <tr><td>Rust <span class="mono">webpki-roots</span></td><td><span class="pill mid">Update and rebuild</span></td><td class="v">1.0.10</td></tr>
+        <tr><td>Debian <span class="mono">ca-certificates</span></td><td><span class="pill mid">Update it</span></td><td class="v">DSA-6572-1</td></tr>
+        <tr><td>Containers, old phones, smart TVs, IoT</td><td><span class="pill bad">At risk</span></td><td>Rebuild or replace</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- GO FIX -->
+<section>
+  <span class="eyebrow">Part 12</span>
+  <h2>How Go fixed it</h2>
+  <p>Go does not check revocation, and it has no root list of its own. So the Go team added a small block list to the standard library. The change has 42 new lines in three files. It removed no lines.</p>
+
+  <div class="facts">
+    <div class="fact"><small>Commit</small><span><a href="https://github.com/golang/go/commit/7f86f957633ee31a1c17a1eb8452ca7a3d9bc141">7f86f957633ee31a1c17a1eb8452ca7a3d9bc141</a></span></div>
+    <div class="fact"><small>Title</small><span>crypto/x509: distrust a handful of intermediates</span></div>
+    <div class="fact"><small>Author · date</small><span>Roland Shoemaker · 19 Oct 2026, 14:20 −0700</span></div>
+    <div class="fact"><small>Fixes</small><span>CVE-2026-111943 · issue #82345 · CL 851047</span></div>
+    <div class="fact"><small>Backports</small><span>aa64342 (Go 1.26) · 90617fb (Go 1.27)</span></div>
+    <div class="fact"><small>Released in</small><span>Go 1.27.3 and Go 1.26.10 · 19 Oct 2026</span></div>
+  </div>
+  <p>See the full change on GitHub: <a href="https://github.com/golang/go/commit/7f86f957633ee31a1c17a1eb8452ca7a3d9bc141">github.com/golang/go/commit/7f86f957</a></p>
+  <p class="muted">Note: the code and the release notes do not name eMudhra. They only say "a handful of intermediates".</p>
+
+  <h3>The idea: block the key, not the certificate</h3>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 190" role="img" aria-labelledby="sp-t" style="min-width:560px">
+      <title id="sp-t">Go takes the public key part of each certificate, hashes it with SHA-256, and looks for the hash in a list of eight</title>
+      <defs><marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <rect x="15" y="15" width="250" height="160" rx="10" class="f-paper s-line" stroke-width="2"/>
+      <text x="30" y="38" class="t-mono f-muted" font-size="10">CERTIFICATE</text>
+      <text x="30" y="58" class="f-ink" font-size="11">Subject: EM DV TLS CA – G3B</text>
+      <text x="30" y="76" class="f-ink" font-size="11">Issuer: emSign Root TLS CA – G3</text>
+      <rect x="25" y="88" width="230" height="52" rx="6" class="f-alsoft s-alert" stroke-width="2"/>
+      <text x="36" y="107" class="t-mono f-alert" font-size="11">SubjectPublicKeyInfo</text>
+      <text x="36" y="126" class="f-ink" font-size="10">algorithm EC P-384 + public key</text>
+      <text x="30" y="162" class="f-muted" font-size="11">Signature …</text>
+      <line x1="258" y1="114" x2="296" y2="114" class="s-muted" stroke-width="2" marker-end="url(#ar7)"/>
+      <rect x="300" y="84" width="110" height="60" rx="10" class="f-asoft s-accent" stroke-width="2"/>
+      <text x="355" y="110" text-anchor="middle" class="t-disp f-ink" font-size="14">SHA-256</text>
+      <text x="355" y="128" text-anchor="middle" class="f-muted" font-size="10">sha256.Sum256</text>
+      <line x1="410" y1="114" x2="446" y2="114" class="s-muted" stroke-width="2" marker-end="url(#ar7)"/>
+      <rect x="450" y="84" width="150" height="60" rx="10" class="f-paper s-ink" stroke-width="1.5"/>
+      <text x="525" y="108" text-anchor="middle" class="t-mono f-ink" font-size="11">ebed6475…5b5105</text>
+      <text x="525" y="128" text-anchor="middle" class="f-muted" font-size="10">64 hex characters</text>
+      <line x1="600" y1="114" x2="636" y2="114" class="s-muted" stroke-width="2" marker-end="url(#ar7)"/>
+      <rect x="640" y="74" width="105" height="80" rx="10" class="f-oksoft s-ok" stroke-width="2"/>
+      <text x="692" y="104" text-anchor="middle" class="t-disp f-ink" font-size="13">In the</text>
+      <text x="692" y="121" text-anchor="middle" class="t-disp f-ink" font-size="13">list of 8?</text>
+      <text x="692" y="140" text-anchor="middle" class="f-muted" font-size="10">map lookup</text>
+    </svg>
+    </div>
+    <figcaption>The SPKI is the part of a certificate that holds the public key. The eMudhra copy and the Sectigo cross-signed copy share the same key, so they give the same hash. Eight hashes block all 16 certificates, and any new certificate that uses one of those keys.</figcaption>
+  </figure>
+
+  <h3>Where Go checks a chain</h3>
+  <p>Go has three ways to check a certificate chain. The fix had to go into all three.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 345" role="img" aria-labelledby="gv-t" style="min-width:560px">
+      <title id="gv-t">Verify sends the check to the Apple verifier, the Go verifier or the Windows verifier; all three now call containsDistrustedSPKIHash</title>
+      <defs><marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" class="f-muted"/></marker></defs>
+      <rect x="200" y="10" width="360" height="50" rx="10" class="f-paper s-ink" stroke-width="1.5"/>
+      <text x="380" y="31" text-anchor="middle" class="f-ink" font-size="12">Your program calls http.Get or tls.Dial</text>
+      <text x="380" y="49" text-anchor="middle" class="t-mono f-accent" font-size="11">→ x509 Certificate.Verify()</text>
+      <g fill="none" class="s-muted" stroke-width="2">
+        <path d="M380 60 V80"/><path d="M130 80 H630"/>
+        <path d="M130 80 V101" marker-end="url(#ar8)"/><path d="M380 80 V101" marker-end="url(#ar8)"/><path d="M630 80 V101" marker-end="url(#ar8)"/>
+      </g>
+      <g class="f-paper s-line" stroke-width="2">
+        <rect x="20" y="105" width="220" height="80" rx="10"/><rect x="270" y="105" width="220" height="80" rx="10"/><rect x="520" y="105" width="220" height="80" rx="10"/>
+      </g>
+      <text x="130" y="127" text-anchor="middle" class="t-disp f-ink" font-size="14">macOS and iOS</text>
+      <text x="130" y="145" text-anchor="middle" class="f-muted" font-size="10">Apple checks the chain</text>
+      <text x="130" y="170" text-anchor="middle" class="t-mono f-ok" font-size="11">root_darwin.go +5</text>
+      <text x="380" y="127" text-anchor="middle" class="t-disp f-ink" font-size="14">Linux, or your own pool</text>
+      <text x="380" y="145" text-anchor="middle" class="f-muted" font-size="10">Go builds and checks the chain</text>
+      <text x="380" y="170" text-anchor="middle" class="t-mono f-ok" font-size="11">verify.go +31</text>
+      <text x="630" y="127" text-anchor="middle" class="t-disp f-ink" font-size="14">Windows</text>
+      <text x="630" y="145" text-anchor="middle" class="f-muted" font-size="10">Windows checks the chain</text>
+      <text x="630" y="170" text-anchor="middle" class="t-mono f-ok" font-size="11">root_windows.go +6</text>
+      <g fill="none" class="s-ok" stroke-width="2">
+        <path d="M130 185 V205 H630 V185"/><path d="M380 185 V221" marker-end="url(#ar8)"/>
+      </g>
+      <rect x="190" y="225" width="380" height="46" rx="10" class="f-asoft s-accent" stroke-width="2"/>
+      <text x="380" y="253" text-anchor="middle" class="t-mono f-ink" font-size="13">containsDistrustedSPKIHash(chain)</text>
+      <g fill="none" class="s-muted" stroke-width="2">
+        <path d="M300 271 L230 290" marker-end="url(#ar8)"/><path d="M460 271 L530 290" marker-end="url(#ar8)"/>
+      </g>
+      <rect x="60" y="294" width="300" height="42" rx="10" class="f-alsoft s-alert" stroke-width="2"/>
+      <text x="210" y="320" text-anchor="middle" class="f-alert t-disp" font-size="13">true → remove the chain</text>
+      <rect x="400" y="294" width="300" height="42" rx="10" class="f-oksoft s-ok" stroke-width="2"/>
+      <text x="550" y="320" text-anchor="middle" class="f-ok t-disp" font-size="13">false → keep the chain</text>
+    </svg>
+    </div>
+    <figcaption>On macOS, iOS and Windows, Go asks the operating system to check the chain when you use the system roots. On Linux, or when you give your own root pool, Go checks the chain itself.</figcaption>
+  </figure>
+
+<pre class="code"><span class="c">// verify.go — Verify() picks the verifier (code before the fix, abridged)</span>
+if runtime.GOOS == "windows" || runtime.GOOS == "darwin" || runtime.GOOS == "ios" {
+    systemPool := systemRootsPool()
+    if opts.Roots == nil &amp;&amp; (systemPool == nil || systemPool.systemPool) {
+        return c.systemVerify(&amp;opts)   <span class="c">// returns early: Go's own checks never run</span>
+    }
+    ...
+}
+<span class="c">// Linux, and any custom Roots pool, continue to Go's own chain builder</span></pre>
+  <p>This is why one check in <span class="mono">verify.go</span> was not sufficient. On macOS and Windows, <span class="mono">systemVerify</span> returns before Go's own checks.</p>
+
+  <h3>Walk through the change</h3>
+
+  <div class="walk">
+    <h3>Step 1. The block list <span class="file">verify.go · new</span></h3>
+<pre class="code"><span class="a">+// distrustedSPKIHashes contains hashes of SPKIs from certificates which</span>
+<span class="a">+// we don't consider to be trustworthy. We use these hashes to filter out</span>
+<span class="a">+// chains returned by Verify</span>
+<span class="a">+var distrustedSPKIHashes = map[string]struct{}{</span>
+<span class="a">+	"ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105": {},</span>
+<span class="a">+	"49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f": {},</span>
+<span class="a">+	"e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41": {},</span>
+<span class="a">+	"5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0": {},</span>
+<span class="a">+	"43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b": {},</span>
+<span class="a">+	"63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8": {},</span>
+<span class="a">+	"ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6": {},</span>
+<span class="a">+	"92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30": {},</span>
+<span class="a">+}</span></pre>
+    <ul>
+      <li>There are 8 entries, one for each weak key.</li>
+      <li>Each entry is the SHA-256 hash of a certificate's public key part (SPKI), written as 64 hex characters.</li>
+      <li><span class="mono">map[string]struct{}</span> is Go's usual way to make a set. Only the key is important. The value <span class="mono">{}</span> uses no memory.</li>
+      <li>A lookup in a map is very fast. The check adds almost no time to each connection.</li>
+    </ul>
+
+    <h3>Step 2. The check function <span class="file">verify.go · new</span></h3>
+<pre class="code"><span class="a">+// containsDistrustedSPKIHash checks if any of the certificates in the chain</span>
+<span class="a">+// have an SPKI whose hash is present in the distrustedSPKIHashes map.</span>
+<span class="a">+func containsDistrustedSPKIHash(chain []*Certificate) bool {</span>
+<span class="a">+	for _, c := range chain {                                   </span><span class="c">// each certificate: leaf, intermediates, root</span>
+<span class="a">+		h := sha256.Sum256(c.RawSubjectPublicKeyInfo)            </span><span class="c">// hash the raw SPKI bytes</span>
+<span class="a">+		if _, ok := distrustedSPKIHashes[hex.EncodeToString(h[:])]; ok {   </span><span class="c">// in the list?</span>
+<span class="a">+			return true                                          </span><span class="c">// yes: this chain is bad</span>
+<span class="a">+		}</span>
+<span class="a">+	}</span>
+<span class="a">+	return false</span>
+<span class="a">+}</span></pre>
+    <p>The function looks at every certificate in the chain, not only the leaf. So a chain fails if it goes through one of the weak intermediates. The change also adds two imports, <span class="mono">crypto/sha256</span> and <span class="mono">encoding/hex</span>.</p>
+
+    <h3>Step 3. Go's own verifier <span class="file">verify.go · Verify()</span></h3>
+<pre class="code">candidateChains = slices.DeleteFunc(candidateChains, func(chain []*Certificate) bool {
+    if !policiesValid(chain, opts) {                       <span class="c">// existing check</span>
+        invalidPoliciesChains++
+        return true
+    }
+    if !anyKeyUsage &amp;&amp; !checkChainForKeyUsage(chain, opts.KeyUsages) {   <span class="c">// existing</span>
+        incompatibleKeyUsageChains++
+        return true
+    }
+    if err := checkChainConstraints(chain); err != nil {   <span class="c">// existing</span>
+        ...
+        return true
+    }
+<span class="a">+   if containsDistrustedSPKIHash(chain) {</span>
+<span class="a">+       return true</span>
+<span class="a">+   }</span>
+    return false
+})
+
+if len(candidateChains) == 0 {
+    ...
+    err = CertificateInvalidError{c, NoValidChains, strings.Join(details, ", ")}
+    return nil, err
+}</pre>
+    <ul>
+      <li>Go first builds all possible chains from the leaf to a trusted root.</li>
+      <li><span class="mono">slices.DeleteFunc</span> removes each chain for which the function returns <span class="mono">true</span>. Go already used it to remove chains with bad policies, key usage or name rules.</li>
+      <li>The fix adds one more rule at the end: remove the chain if it has a blocked key.</li>
+      <li>If no chain is left, <span class="mono">Verify</span> returns an error. Your program sees: <span class="mono">tls: failed to verify certificate: x509: no valid chains built</span>.</li>
+      <li>This path covers Linux, and every platform when you give your own <span class="mono">VerifyOptions.Roots</span> pool.</li>
+    </ul>
+
+    <h3>Step 4. macOS and iOS <span class="file">root_darwin.go · systemVerify()</span></h3>
+<pre class="code">	if len(chain[0]) == 0 {
+		// This should _never_ happen, but to be safe
+		return nil, errors.New("x509: macos certificate verification internal error")
+	}
+
+<span class="a">+	if containsDistrustedSPKIHash(chain[0]) {</span>
+<span class="a">+		return nil, CertificateInvalidError{c, NoValidChains, ""}</span>
+<span class="a">+	}</span>
+
+	if opts.DNSName != "" {
+		// If we have a DNS name, apply our own name verification</pre>
+    <ul>
+      <li>Go asks Apple's Security framework to check the certificate. Apple gives back one chain, <span class="mono">chain[0]</span>.</li>
+      <li>The fix checks that chain immediately after Go receives it. If the chain has a blocked key, Go rejects it, even if Apple accepted it.</li>
+      <li>Thus a Mac without Apple's 19 October update is also protected.</li>
+    </ul>
+
+    <h3>Step 5. Windows <span class="file">root_windows.go · systemVerify()</span></h3>
+<pre class="code"> import (
+ 	"bytes"
+ 	"errors"
+<span class="a">+	"slices"</span>
+ 	...
+
+<span class="a">+	chains = slices.DeleteFunc(chains, containsDistrustedSPKIHash)</span>
+<span class="a">+</span>
+ 	if len(chains) == 0 {
+<span class="a">+		if topErr == nil {</span>
+<span class="a">+			return nil, CertificateInvalidError{c, NoValidChains, ""}</span>
+<span class="a">+		}</span>
+ 		// Return the error from the highest quality context.
+ 		return nil, topErr
+ 	}</pre>
+    <ul>
+      <li>Windows gives back its best chain and some lower-quality chains. Go removes each chain that has a blocked key, and keeps the others.</li>
+      <li>If no chain is left, and Windows gave no other error, Go returns the "no valid chains" error.</li>
+      <li>Before the fix, if the best chain was good, it was always in the list. So an empty list always had an error in <span class="mono">topErr</span>. The new <span class="mono">if</span> is necessary because now Go can remove all chains itself.</li>
+    </ul>
+  </div>
+
+  <h3>Before and after</h3>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Platform</th><th>Before Go 1.27.3 / 1.26.10</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Linux, containers</td><td>Accepted a fake certificate if the old emSign G3 root was still in <span class="mono">/etc/ssl/certs</span><span class="pill bad">At risk</span></td><td>Rejected, also with an old <span class="mono">ca-certificates</span><span class="pill ok">Safe</span></td></tr>
+        <tr><td class="k">macOS, iOS</td><td>Safe only after Apple's block (19 Oct)</td><td>Rejected by Go itself<span class="pill ok">Safe</span></td></tr>
+        <tr><td class="k">Windows</td><td>Safe only after Microsoft's block (20 Oct)</td><td>Rejected by Go itself<span class="pill ok">Safe</span></td></tr>
+        <tr><td class="k">Own Roots pool</td><td>Accepted if your pool had the G3 root<span class="pill bad">At risk</span></td><td>Rejected<span class="pill ok">Safe</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h3>What the fix does not do</h3>
+      <ul>
+        <li>It does not remove the emSign G3 root. Other G3 certificates still work in Go until your OS or distro removes the root.</li>
+        <li>It does not add revocation checks. It blocks only these 8 keys.</li>
+        <li>It does not change binaries that you built before. You must rebuild them.</li>
+        <li>It adds no tests in this commit.</li>
+      </ul></div>
+    <div class="card"><h3>Check your programs</h3>
+<pre class="code">go version                  <span class="c"># go1.27.3 or go1.26.10 or later</span>
+go version -m ./myservice   <span class="c"># Go version used to build a binary</span>
+
+<span class="c"># SPKI hash of a certificate, same as Go</span>
+openssl x509 -in cert.pem -pubkey -noout \
+  | openssl pkey -pubin -outform der \
+  | sha256sum</pre></div>
+  </div>
+</section>
+
+<!-- WHAT TO DO -->
+<section>
+  <span class="eyebrow">Part 13</span>
+  <h2>What you must do</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>For all users</h3>
+      <ol class="steps">
+        <li><div>Update your browser.</div></li>
+        <li><div>Update your phone and computer operating system.</div></li>
+        <li><div>Do not ignore a certificate warning.</div></li>
+        <li><div>Do not use public Wi-Fi for banking until your devices are updated.</div></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>For developers</h3>
+      <ol class="steps">
+        <li><div>Run <span class="mono">pip install -U certifi</span>.</div></li>
+        <li><div>Update <span class="mono">ca-certificates</span> on each server.</div></li>
+        <li><div>Rebuild container images from new base images.</div></li>
+        <li><div>Update Go, Node.js and the JDK. Bump <span class="mono">webpki-roots</span>.</div></li>
+        <li><div>Find sites that use emSign G3 certificates. Replace those certificates.</div></li>
+      </ol>
+    </div>
+  </div>
+  <div class="note">
+    <b class="tag">Test your browser</b>
+    <p>Open <a href="https://emudhra.we-have-a-problem.com/">emudhra.we-have-a-problem.com</a>. If your browser is safe, all the test connections fail.</p>
+  </div>
+</section>
+
+<!-- LESSON -->
+<section>
+  <span class="eyebrow">Part 14</span>
+  <h2>The lesson</h2>
+  <p>The HSM had a FIPS 140-2 Level 3 certificate. But a human error in a script made the keys weak. A certified box does not stop a bad procedure.</p>
+  <p>The weak keys were in public certificates for 18 months. A free tool found them in a few minutes. Nobody had done that simple check before. Experts now ask CAs to test each new public key for this type of weakness.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Sources</span>
+  <ul class="sources">
+    <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=2083449">Mozilla Bugzilla 2083449 — incident report</a></li>
+    <li><a href="https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/0R3XLJL6FuE/m/VAgSvefvAAAJ">Mozilla dev-security-policy thread (Mozilla and Chrome statements)</a></li>
+    <li><a href="https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/">Mozilla Security Blog</a></li>
+    <li><a href="https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/">Google Security Blog</a></li>
+    <li><a href="https://blog.cloudflare.com/emudhra-certificate-compromise">Cloudflare Blog</a></li>
+    <li><a href="https://scotthelme.co.uk/eight-bits-of-trust-emudhras-ca-keys-cracked-in-milliseconds/">Scott Helme — Eight Bits of Trust</a></li>
+    <li><a href="https://thehackernews.com/2026/10/eight-emudhra-ca-keys-compromised.html">The Hacker News</a></li>
+    <li><a href="https://www.helpnetsecurity.com/2026/10/21/emudhra-certificates-private-keys-compromised/">Help Net Security</a></li>
+    <li><a href="https://socradar.io/blog/emudhra-ca-key-compromise-weak-keys-risks-and-fixes/">SOCRadar</a></li>
+    <li><a href="https://github.com/golang/go/commit/7f86f957633ee31a1c17a1eb8452ca7a3d9bc141">Go commit 7f86f957 — crypto/x509: distrust a handful of intermediates</a></li>
+    <li><a href="https://github.com/golang/go/issues/82345">Go issue #82345</a></li>
+    <li><a href="https://groups.google.com/g/golang-announce/c/66pojueaQek/m/tmWX2Pq9AgAJ">Go 1.27.3 and 1.26.10 security release</a></li>
+  </ul>
+</section>
+
+<footer>Status on 22 October 2026. eMudhra's full root-cause report is not yet published. Chrome is still reviewing eMudhra's other root (G1).</footer>
+</div>
+
+</body>
+</html>

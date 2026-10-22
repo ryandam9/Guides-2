@@ -20,6 +20,7 @@ Technical guides and reference notes.
 ## Security
 
 - [Secure file exchange with SFTP and OpenPGP](docs/secure-file-transfer-sftp-openpgp.md)
+- [Eight keys, 256 guesses: the eMudhra weak CA keys (illustrated incident explainer)](docs/emudhra-weak-ca-keys.html)
 
 ## Terminal and tools
 

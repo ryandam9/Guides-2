@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PySpark and Py4J</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; diagrams break wider on desktop. Teal = Python, amber = JVM, indigo = the wire between them. */
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --fg:#18202c; --muted:#596476; --line:#d5dbe3;
+  --py:#0c8a7b; --jvm:#bb620c; --wire:#5550c4; --warn:#c0362c; --codebg:#eef1f5;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11141b; --panel:#181c25; --fg:#e5e8ee; --muted:#9aa3b2; --line:#2b313d;
+  --py:#3fc6b2; --jvm:#f0a148; --wire:#9d98ff; --warn:#ff7a6e; --codebg:#1d222c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11141b; --panel:#181c25; --fg:#e5e8ee; --muted:#9aa3b2; --line:#2b313d;
+  --py:#3fc6b2; --jvm:#f0a148; --wire:#9d98ff; --warn:#ff7a6e; --codebg:#1d222c; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16.5px;line-height:1.62}
+.wrap{max-width:820px;margin:0 auto;padding-block:40px 80px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.1rem,6vw,3.4rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.45rem,3.6vw,1.9rem);font-weight:700;margin-top:64px;display:flex;gap:14px;align-items:baseline}
+h2 .n{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-weight:400;letter-spacing:.06em}
+h3{font-size:1.15rem;font-weight:500;margin-top:30px}
+p,li{max-width:66ch}
+p{margin:14px 0}
+.lede{font-size:1.15rem;color:var(--muted);margin-top:18px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{font-family:var(--mono);font-size:.75rem;letter-spacing:.04em;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:inline-flex;gap:7px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%}
+.py{color:var(--py)} .jvm{color:var(--jvm)} .wire{color:var(--wire)}
+code{font-family:var(--mono);font-size:.88em;background:var(--codebg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--mono);font-size:.84rem;line-height:1.6;background:var(--codebg);border:1px solid var(--line);
+  border-radius:8px;padding:16px 18px;overflow-x:auto;margin:18px 0}
+pre code{background:none;padding:0;font-size:inherit}
+pre .c{color:var(--muted)} pre .k{color:var(--wire)} pre .s{color:var(--py)}
+.fig{margin:26px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:560px;height:auto}
+.figcap{font-size:.85rem;color:var(--muted);margin-top:-14px;margin-bottom:24px}
+svg text{font-family:var(--body)}
+svg .t{fill:var(--fg);font-size:14px}
+svg .tb{fill:var(--fg);font-size:15px;font-weight:600}
+svg .tm{fill:var(--muted);font-size:12.5px}
+svg .mono{font-family:var(--mono);font-size:12px;fill:var(--fg)}
+svg .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+svg .boxpy{fill:var(--py);fill-opacity:.1;stroke:var(--py);stroke-width:1.5}
+svg .boxjvm{fill:var(--jvm);fill-opacity:.1;stroke:var(--jvm);stroke-width:1.5}
+svg .boxwire{fill:var(--wire);fill-opacity:.08;stroke:var(--wire);stroke-width:1.2;stroke-dasharray:4 3}
+svg .outer{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+svg .ar{stroke:var(--wire);stroke-width:2;fill:none}
+svg .arpy{stroke:var(--py);stroke-width:2;fill:none}
+svg .arjvm{stroke:var(--jvm);stroke-width:2;fill:none}
+svg .armuted{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .life{stroke:var(--line);stroke-width:2;stroke-dasharray:3 4}
+svg .boxn{fill:var(--panel);stroke:var(--muted);stroke-width:1.3}
+svg .slot{fill:var(--jvm);fill-opacity:.22;stroke:var(--jvm);stroke-width:1}
+svg .hp{fill:var(--wire)} svg .hpy{fill:var(--py)} svg .hjvm{fill:var(--jvm)} svg .hm{fill:var(--muted)}
+svg .cpy{fill:var(--py)} svg .cjvm{fill:var(--jvm)} svg .cwire{fill:var(--wire)}
+.steps{list-style:none;padding:0;margin:22px 0;counter-reset:s;display:grid;gap:0}
+.steps li{counter-increment:s;position:relative;padding:0 0 20px 46px;max-width:none}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;
+  font-family:var(--mono);font-size:.8rem;display:grid;place-items:center;background:var(--panel);border:1.5px solid var(--wire);color:var(--wire)}
+.steps li::after{content:"";position:absolute;left:14px;top:30px;bottom:2px;width:1.5px;background:var(--line)}
+.steps li:last-child::after{display:none}
+.steps b{font-weight:600}
+.notice{border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:12px 16px;margin:20px 0;background:var(--panel)}
+.notice .h{font-family:var(--mono);font-size:.75rem;letter-spacing:.14em;font-weight:600;display:block;margin-bottom:4px}
+.notice p{margin:4px 0}
+.notice.note{border-left-color:var(--wire)} .notice.note .h{color:var(--wire)}
+.notice.caution{border-left-color:var(--jvm)} .notice.caution .h{color:var(--jvm)}
+.notice.warning{border-left-color:var(--warn)} .notice.warning .h{color:var(--warn)}
+.tbl{overflow-x:auto;margin:20px 0}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.92rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ok{color:var(--py);font-weight:600} .no{color:var(--warn);font-weight:600}
+hr{border:0;border-top:1px solid var(--line);margin:56px 0 0}
+.foot{color:var(--muted);font-size:.85rem;margin-top:18px}
+a{color:var(--wire)}
+:focus-visible{outline:2px solid var(--wire);outline-offset:2px}
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>PySpark and Py4J</h1>
+  <p class="lede">How your Python code controls the Spark JVM.</p>
+  <div class="meta">
+    <span class="chip"><span class="dot" style="background:var(--py)"></span>Python process</span>
+    <span class="chip"><span class="dot" style="background:var(--jvm)"></span>JVM process</span>
+    <span class="chip"><span class="dot" style="background:var(--wire)"></span>Socket between them</span>
+  </div>
+</header>
+
+<h2><span class="n">01</span>What Py4J is</h2>
+<p>Spark is written in Scala. Scala runs in the Java Virtual Machine (JVM). Python cannot run JVM code directly.</p>
+<p>Py4J is a small library. It connects a Python process to a JVM process. It uses a TCP socket on the local machine.</p>
+<p>With Py4J, Python can do these tasks:</p>
+<ul>
+  <li>Make a JVM object.</li>
+  <li>Call a method on a JVM object.</li>
+  <li>Get a result back from the JVM.</li>
+  <li>Receive calls from the JVM (callbacks).</li>
+</ul>
+<p>PySpark uses Py4J for one purpose: to control the Spark driver. Py4J does not move your data. Py4J does not run on the executors.</p>
+
+<h2><span class="n">02</span>Why Python and the JVM must communicate</h2>
+<p>The Spark engine exists only in the JVM. The SQL parser, the Catalyst optimizer, the scheduler, the cluster managers and the shuffle system are all Scala code. PySpark does not contain a second engine. PySpark is a thin Python layer that sends instructions to the JVM engine.</p>
+<p>Your program logic is in Python. The engine is in the JVM. Thus each side must ask the other side for the things that it does not have.</p>
+
+<div class="tbl"><table>
+<thead><tr><th>Direction</th><th>Reason</th><th>Example</th><th>Channel</th></tr></thead>
+<tbody>
+<tr><td class="py">Python → JVM</td><td>Build the query plan. Python has no plan object.</td><td><code>df.filter(...)</code></td><td>Py4J</td></tr>
+<tr><td class="py">Python → JVM</td><td>Start the work. Only the JVM can schedule tasks.</td><td><code>df.count()</code>, <code>df.write</code></td><td>Py4J</td></tr>
+<tr><td class="py">Python → JVM</td><td>Get results, schemas and settings back.</td><td><code>df.schema</code>, <code>collect()</code></td><td>Py4J + local socket</td></tr>
+<tr><td class="py">Python → JVM</td><td>Control the session.</td><td><code>spark.conf.set(...)</code>, <code>spark.stop()</code></td><td>Py4J</td></tr>
+<tr><td class="jvm">JVM → Python</td><td>Run your Python function on the data. The JVM cannot run Python code.</td><td>UDF, <code>rdd.map(lambda ...)</code></td><td>Plain socket on each executor</td></tr>
+<tr><td class="jvm">JVM → Python</td><td>Call your Python code when an event occurs.</td><td><code>foreachBatch</code></td><td>Py4J callback</td></tr>
+</tbody></table></div>
+
+<div class="notice note"><span class="h">NOTE</span>
+<p>Spark uses one engine for all languages. Scala, Java, Python, R and SQL use the same optimizer and the same execution code. The cost of this design is the boundary between Python and the JVM. Each time data crosses the boundary, Spark must serialize it and send it through a socket. Keep the data in the JVM when possible.</p></div>
+
+<h2><span class="n">03</span>The processes in a PySpark application</h2>
+<p>A PySpark application has two kinds of Python process. Each kind uses a different connection to the JVM. The diagram shows both.</p>
+
+<div class="fig">
+<svg viewBox="0 0 680 440" role="img" aria-label="Driver node with Python process connected to JVM by Py4J; executor node with executor JVM connected to Python worker by a plain socket">
+  <defs>
+    <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="hp"/></marker>
+    <marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="hm"/></marker>
+  </defs>
+  <rect x="16" y="16" width="648" height="208" rx="12" class="outer"/>
+  <text x="32" y="40" class="lbl">DRIVER NODE</text>
+
+  <rect x="36" y="56" width="236" height="150" rx="10" class="boxpy"/>
+  <text x="54" y="82" class="tb">Python process</text>
+  <text x="54" y="108" class="mono">app.py</text>
+  <text x="54" y="132" class="t">SparkSession (wrapper)</text>
+  <text x="54" y="156" class="t">DataFrame (wrapper)</text>
+  <text x="54" y="186" class="tm">Py4J JavaGateway client</text>
+
+  <rect x="408" y="56" width="236" height="150" rx="10" class="boxjvm"/>
+  <text x="426" y="82" class="tb">Driver JVM</text>
+  <text x="426" y="108" class="t">Py4J GatewayServer</text>
+  <text x="426" y="132" class="t">SparkSession (real)</text>
+  <text x="426" y="156" class="t">Catalyst + scheduler</text>
+  <text x="426" y="186" class="tm">Objects kept by ID</text>
+
+  <line x1="276" y1="132" x2="404" y2="132" class="ar" marker-start="url(#aw)" marker-end="url(#aw)"/>
+  <text x="340" y="118" text-anchor="middle" class="mono" style="fill:var(--wire);font-weight:600">Py4J</text>
+  <text x="340" y="154" text-anchor="middle" class="tm">TCP · localhost</text>
+  <text x="340" y="170" text-anchor="middle" class="tm">method calls, IDs</text>
+
+  <path d="M526 206 V246 H156 V300" class="armuted" marker-end="url(#am)"/>
+  <text x="340" y="264" text-anchor="middle" class="tm">tasks over Spark RPC (JVM to JVM)</text>
+
+  <rect x="16" y="280" width="648" height="148" rx="12" class="outer"/>
+  <text x="32" y="304" class="lbl">EXECUTOR NODE (one of many)</text>
+
+  <rect x="36" y="316" width="236" height="96" rx="10" class="boxjvm"/>
+  <text x="54" y="342" class="tb">Executor JVM</text>
+  <text x="54" y="366" class="t">Runs tasks</text>
+  <text x="54" y="390" class="tm">Built-in functions run here</text>
+
+  <rect x="408" y="316" width="236" height="96" rx="10" class="boxpy"/>
+  <text x="426" y="342" class="tb">Python worker</text>
+  <text x="426" y="366" class="t">pyspark.daemon forks it</text>
+  <text x="426" y="390" class="tm">Runs your UDF code</text>
+
+  <line x1="276" y1="364" x2="404" y2="364" class="armuted" marker-start="url(#am)" marker-end="url(#am)"/>
+  <text x="340" y="350" text-anchor="middle" class="tm">plain socket</text>
+  <text x="340" y="384" text-anchor="middle" class="tm">pickle or Arrow</text>
+  <text x="340" y="400" text-anchor="middle" class="mono" style="fill:var(--warn);font-size:11px">NOT Py4J</text>
+</svg>
+</div>
+<p class="figcap">Py4J connects only the two processes on the driver. The executors use a different, faster channel.</p>
+
+<div class="notice note"><span class="h">NOTE</span>
+<p>The Python <code>SparkSession</code> and <code>DataFrame</code> objects hold no data. Each one holds an ID that points to a real object in the JVM.</p></div>
+
+<h2><span class="n">04</span>Executors and the driver</h2>
+<p>Each executor is a separate JVM process. On YARN and EMR, each executor runs in a YARN container. On Kubernetes, each executor runs in a pod. One node can have more than one executor. Executors do not share a heap.</p>
+
+<h3>What one executor JVM contains</h3>
+<div class="tbl"><table>
+<thead><tr><th>Part</th><th>Setting</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Heap</td><td><code>spark.executor.memory</code></td><td>Execution memory (shuffle, join, sort, aggregation), storage memory (cache, broadcast) and user memory.</td></tr>
+<tr><td>Overhead</td><td><code>spark.executor.memoryOverhead</code></td><td>Memory outside the heap: JVM internals, Netty buffers, native libraries and the <b>Python workers</b>.</td></tr>
+<tr><td>Task slots</td><td><code>spark.executor.cores</code></td><td>The number of tasks that run at the same time. Each task is a thread, not a process.</td></tr>
+<tr><td>BlockManager</td><td><code>spark.blockManager.port</code></td><td>Keeps cached partitions, shuffle files and broadcast pieces. Sends them to other executors.</td></tr>
+</tbody></table></div>
+
+<div class="notice caution"><span class="h">CAUTION</span>
+<p>Python workers use overhead memory, not heap memory. If a job with heavy Python UDFs fails because YARN kills the container, increase <code>spark.executor.memoryOverhead</code>. Do not only increase <code>spark.executor.memory</code>.</p></div>
+
+<h3>How the driver talks to executors</h3>
+<p>The driver JVM and the executor JVMs use <b>Spark RPC</b>. Spark RPC uses Netty over TCP. It does not use Py4J.</p>
+
+<div class="fig">
+<svg viewBox="0 0 680 440" role="img" aria-label="Driver JVM asks the cluster manager for executors; executor JVMs register with the driver, receive LaunchTask messages, send status and heartbeats, and fetch shuffle blocks from each other">
+  <defs>
+    <marker id="rw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="hp"/></marker>
+    <marker id="rm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="hm"/></marker>
+    <marker id="rj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="hjvm"/></marker>
+  </defs>
+
+  <rect x="24" y="20" width="420" height="112" rx="10" class="boxjvm"/>
+  <text x="42" y="46" class="tb">Driver JVM</text>
+  <text x="42" y="72" class="t">DAGScheduler · TaskScheduler</text>
+  <text x="42" y="94" class="t">DriverEndpoint (receives RPC)</text>
+  <text x="42" y="116" class="tm">MapOutputTracker: where each shuffle block is</text>
+
+  <rect x="500" y="34" width="160" height="84" rx="10" class="boxn"/>
+  <text x="580" y="66" text-anchor="middle" class="tb">Cluster manager</text>
+  <text x="580" y="90" text-anchor="middle" class="tm">YARN · Kubernetes</text>
+
+  <line x1="448" y1="76" x2="496" y2="76" class="armuted" marker-end="url(#rm)"/>
+  <text x="472" y="66" text-anchor="middle" class="tm">1</text>
+
+  <path d="M600 118 V246" class="armuted" marker-end="url(#rm)"/>
+  <text x="610" y="186" class="tm">2 launches</text>
+
+  <path d="M90 136 V246" class="ar" marker-end="url(#rw)"/>
+  <text x="98" y="172" class="mono" style="fill:var(--wire)">4 LaunchTask</text>
+  <path d="M260 246 V136" class="ar" marker-end="url(#rw)"/>
+  <text x="252" y="200" text-anchor="end" class="tm">3 register</text>
+  <text x="252" y="218" text-anchor="end" class="tm">5 status · 6 heartbeat</text>
+
+  <path d="M420 136 V246" class="ar" marker-start="url(#rw)" marker-end="url(#rw)"/>
+  <text x="428" y="188" class="tm">3–6</text>
+  <text x="428" y="206" class="tm">same RPC</text>
+
+  <rect x="24" y="250" width="288" height="150" rx="10" class="boxjvm"/>
+  <text x="42" y="276" class="tb">Executor JVM 1</text>
+  <text x="42" y="298" class="tm">own heap, GC and thread pool</text>
+  <rect x="42" y="310" width="54" height="22" rx="4" class="slot"/><text x="69" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="104" y="310" width="54" height="22" rx="4" class="slot"/><text x="131" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="166" y="310" width="54" height="22" rx="4" class="slot"/><text x="193" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="228" y="310" width="54" height="22" rx="4" class="slot"/><text x="255" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <text x="42" y="362" class="t">BlockManager</text>
+  <text x="42" y="382" class="tm">shuffle files · cache · broadcast</text>
+
+  <rect x="372" y="250" width="288" height="150" rx="10" class="boxjvm"/>
+  <text x="390" y="276" class="tb">Executor JVM 2</text>
+  <text x="390" y="298" class="tm">own heap, GC and thread pool</text>
+  <rect x="390" y="310" width="54" height="22" rx="4" class="slot"/><text x="417" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="452" y="310" width="54" height="22" rx="4" class="slot"/><text x="479" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="514" y="310" width="54" height="22" rx="4" class="slot"/><text x="541" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <rect x="576" y="310" width="54" height="22" rx="4" class="slot"/><text x="603" y="325" text-anchor="middle" class="mono" style="font-size:10.5px">task</text>
+  <text x="390" y="362" class="t">BlockManager</text>
+  <text x="390" y="382" class="tm">shuffle files · cache · broadcast</text>
+
+  <line x1="316" y1="360" x2="368" y2="360" class="arjvm" marker-start="url(#rj)" marker-end="url(#rj)"/>
+  <text x="342" y="348" text-anchor="middle" class="tm">data</text>
+  <text x="342" y="428" text-anchor="middle" class="tm">Shuffle blocks go from executor to executor. They do not go through the driver.</text>
+</svg>
+</div>
+<p class="figcap">The numbers match the steps below. The driver controls the work. The executors move the data. Four task slots means <code>spark.executor.cores = 4</code>.</p>
+
+<ol class="steps">
+  <li><b>The driver asks for executors.</b> It sends a request to the cluster manager (YARN ResourceManager, Kubernetes API or Standalone master).</li>
+  <li><b>The cluster manager starts the executor JVMs.</b> Each executor gets the address of the driver on its command line.</li>
+  <li><b>Each executor registers.</b> It connects to the <code>DriverEndpoint</code> and sends <code>RegisterExecutor</code>. The driver records its ID, host and cores.</li>
+  <li><b>The driver sends tasks.</b> The DAGScheduler divides a job into stages. The TaskScheduler puts each task in a free slot and sends a <code>LaunchTask</code> message. The code of the stage goes to the executors one time, as a broadcast.</li>
+  <li><b>The executors report.</b> They send <code>StatusUpdate</code> messages. A small result goes in the message. A large result stays in the BlockManager, and the driver gets it from there.</li>
+  <li><b>The executors send heartbeats.</b> The interval is 10 seconds (<code>spark.executor.heartbeatInterval</code>). If the driver gets no heartbeat for <code>spark.network.timeout</code> (120 seconds), it marks the executor as lost. It then runs the tasks again on other executors.</li>
+</ol>
+
+<h3>The driver does not move the data</h3>
+<ul>
+  <li><b>Shuffle:</b> map tasks write shuffle files to the local disk. Reduce tasks ask the driver's <code>MapOutputTracker</code> where the blocks are. Then they get the blocks directly from the other executors, or from the external shuffle service.</li>
+  <li><b>Broadcast:</b> executors get broadcast pieces from each other (<code>TorrentBroadcast</code>), not only from the driver.</li>
+  <li>Data goes to the driver only when you ask for it: <code>collect()</code>, <code>take()</code>, <code>toPandas()</code>.</li>
+</ul>
+
+<h3>The three channels in a PySpark application</h3>
+<div class="tbl"><table>
+<thead><tr><th>Channel</th><th>Between</th><th>Carries</th></tr></thead>
+<tbody>
+<tr><td class="wire"><b>Py4J</b></td><td>Python driver ↔ driver JVM (same machine)</td><td>Method calls, object IDs, small values, callbacks</td></tr>
+<tr><td class="jvm"><b>Spark RPC</b></td><td>Driver JVM ↔ executor JVMs, and executor ↔ executor</td><td>Tasks, status, heartbeats, shuffle and broadcast data</td></tr>
+<tr><td class="py"><b>Plain socket</b></td><td>Executor JVM ↔ its Python workers (same machine)</td><td>Rows for Python UDFs, as pickle or Arrow</td></tr>
+</tbody></table></div>
+
+<h2><span class="n">05</span>How the connection starts</h2>
+<p>The start sequence has two forms. The form depends on which process starts first.</p>
+
+<h3>Form A: you run <code>spark-submit app.py</code></h3>
+<ol class="steps">
+  <li><b>The JVM starts first.</b> <code>spark-submit</code> starts the class <code>org.apache.spark.deploy.PythonRunner</code>.</li>
+  <li><b>The JVM opens a Py4J GatewayServer.</b> The server listens on a free local port. It also makes a secret token.</li>
+  <li><b>The JVM starts Python.</b> It puts the port and the token into the environment variables <code>PYSPARK_GATEWAY_PORT</code> and <code>PYSPARK_GATEWAY_SECRET</code>.</li>
+  <li><b>Python connects.</b> PySpark reads the two variables and makes a <code>JavaGateway</code> client.</li>
+  <li><b>Python makes the context.</b> <code>SparkContext</code> asks the gateway to make a JVM <code>JavaSparkContext</code>. Python keeps the ID of that object.</li>
+</ol>
+
+<h3>Form B: you run <code>python app.py</code> or a notebook</h3>
+<ol class="steps">
+  <li><b>Python starts first.</b> It has no JVM.</li>
+  <li><b>Python starts the JVM.</b> The function <code>launch_gateway()</code> runs <code>spark-submit pyspark-shell</code> as a child process.</li>
+  <li><b>The JVM writes its address to a file.</b> It writes the port and the secret to a temporary file. Python reads that file.</li>
+  <li><b>Python connects.</b> Steps 4 and 5 of Form A then occur.</li>
+</ol>
+
+<pre><code><span class="c"># You can see the gateway in a live session</span>
+<span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+
+spark = SparkSession.builder.appName(<span class="s">"py4j-demo"</span>).getOrCreate()
+sc = spark.sparkContext
+
+print(sc._gateway)              <span class="c"># py4j.java_gateway.JavaGateway</span>
+print(sc._gateway.gateway_parameters.port)   <span class="c"># local port, e.g. 41753</span>
+print(type(sc._jsc))            <span class="c"># JavaObject -> JavaSparkContext</span></code></pre>
+
+<div class="notice caution"><span class="h">CAUTION</span>
+<p>Do not share the gateway port with other users. The secret token protects it. Any process with the token can run code in your JVM.</p></div>
+
+<h2><span class="n">06</span>One method call, step by step</h2>
+<p>Most PySpark API methods do one thing only. They send one Py4J call to the JVM. This example follows <code>df.filter("age &gt; 30")</code>.</p>
+
+<div class="fig">
+<svg viewBox="0 0 680 470" role="img" aria-label="Sequence diagram: Python sends a call command for filter to the JVM, the JVM uses reflection, makes a new Dataset, and returns a reference ID">
+  <defs>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="hpy"/></marker>
+    <marker id="aj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="hjvm"/></marker>
+  </defs>
+  <rect x="40" y="20" width="160" height="44" rx="8" class="boxpy"/>
+  <text x="120" y="47" text-anchor="middle" class="tb">Python</text>
+  <rect x="480" y="20" width="160" height="44" rx="8" class="boxjvm"/>
+  <text x="560" y="47" text-anchor="middle" class="tb">Driver JVM</text>
+  <line x1="120" y1="64" x2="120" y2="452" class="life"/>
+  <line x1="560" y1="64" x2="560" y2="452" class="life"/>
+
+  <circle cx="120" cy="96" r="5" class="cpy"/>
+  <text x="134" y="92" class="mono">df.filter("age &gt; 30")</text>
+  <text x="134" y="110" class="tm">df._jdf holds ID o42</text>
+
+  <path d="M120 140 H552" class="arpy" marker-end="url(#ap)"/>
+  <text x="138" y="132" class="tm">1 · send command text</text>
+  <rect x="210" y="152" width="262" height="96" rx="8" class="boxwire"/>
+  <text x="226" y="174" class="mono">c         <tspan class="tm" style="font-family:var(--body)">call</tspan></text>
+  <text x="226" y="192" class="mono">o42       <tspan class="tm" style="font-family:var(--body)">target object</tspan></text>
+  <text x="226" y="210" class="mono">filter    <tspan class="tm" style="font-family:var(--body)">method name</tspan></text>
+  <text x="226" y="228" class="mono">sage &gt; 30 <tspan class="tm" style="font-family:var(--body)">s = string arg</tspan></text>
+  <text x="226" y="243" class="mono">e         <tspan class="tm" style="font-family:var(--body)">end</tspan></text>
+
+  <circle cx="560" cy="282" r="5" class="cjvm"/>
+  <text x="546" y="276" text-anchor="end" class="t">2 · find object o42 in the ID map</text>
+  <text x="546" y="300" text-anchor="end" class="t">3 · reflection: Dataset.filter(String)</text>
+  <text x="546" y="320" text-anchor="end" class="tm">builds a new logical plan; reads no data</text>
+  <text x="546" y="340" text-anchor="end" class="t">4 · store new Dataset as o43</text>
+
+  <path d="M560 376 H128" class="arjvm" marker-end="url(#aj)"/>
+  <text x="546" y="368" text-anchor="end" class="tm">5 · reply</text>
+  <rect x="270" y="384" width="140" height="28" rx="6" class="boxwire"/>
+  <text x="340" y="403" text-anchor="middle" class="mono">!yro43</text>
+
+  <circle cx="120" cy="434" r="5" class="cpy"/>
+  <text x="134" y="438" class="t">6 · wrap o43 in a new Python DataFrame</text>
+</svg>
+</div>
+<p class="figcap">The wire text is simplified. In the reply, <code>!</code> marks a return, <code>y</code> means success, and <code>r</code> means "reference to a JVM object".</p>
+
+<p>The call takes one socket round trip. It reads no rows. Spark reads rows only when you call an action, for example <code>count()</code> or <code>write</code>.</p>
+
+<pre><code>df = spark.createDataFrame([(<span class="s">"ann"</span>, 34), (<span class="s">"bob"</span>, 28)], [<span class="s">"name"</span>, <span class="s">"age"</span>])
+adults = df.filter(<span class="s">"age &gt; 30"</span>)       <span class="c"># one Py4J call, no data moves</span>
+
+print(df._jdf)                         <span class="c"># JavaObject id=o42</span>
+print(adults._jdf)                     <span class="c"># JavaObject id=o43</span>
+print(adults._jdf.queryExecution().optimizedPlan().toString())</code></pre>
+
+<h3>Types that Py4J converts</h3>
+<div class="tbl"><table>
+<thead><tr><th>Python value</th><th>Sent as</th><th>JVM value</th></tr></thead>
+<tbody>
+<tr><td><code>int</code>, <code>float</code>, <code>bool</code>, <code>str</code>, <code>None</code></td><td>Value in the command text</td><td><code>Integer</code>/<code>Long</code>, <code>Double</code>, <code>Boolean</code>, <code>String</code>, <code>null</code></td></tr>
+<tr><td><code>list</code>, <code>dict</code></td><td>Converted copy (PySpark enables <code>auto_convert</code>)</td><td><code>ArrayList</code>, <code>HashMap</code></td></tr>
+<tr><td>Python wrapper (<code>JavaObject</code>)</td><td>ID only, for example <code>o42</code></td><td>The original JVM object</td></tr>
+<tr><td>Other Python objects</td><td>Not supported</td><td>Error</td></tr>
+</tbody></table></div>
+
+<h3>Memory cleanup</h3>
+<p>The JVM keeps each object in an ID map. The object stays alive while Python holds its wrapper. When Python deletes the wrapper, Py4J sends a "delete o43" command. The JVM then removes the object from the map. The JVM garbage collector can then free it.</p>
+
+<h2><span class="n">07</span>Use the gateway directly</h2>
+<p>PySpark gives you access to the gateway. Use it to call JVM classes that PySpark does not wrap.</p>
+
+<div class="tbl"><table>
+<thead><tr><th>Attribute</th><th>Points to</th></tr></thead>
+<tbody>
+<tr><td><code>spark._jvm</code></td><td>The root of all JVM packages. Example: <code>spark._jvm.java.lang.System</code></td></tr>
+<tr><td><code>spark._jsparkSession</code></td><td>The JVM <code>SparkSession</code></td></tr>
+<tr><td><code>sc._jsc</code></td><td>The JVM <code>JavaSparkContext</code></td></tr>
+<tr><td><code>df._jdf</code></td><td>The JVM <code>Dataset&lt;Row&gt;</code></td></tr>
+</tbody></table></div>
+
+<h3>Example: list files with the Hadoop FileSystem API</h3>
+<pre><code>sc = spark.sparkContext
+jvm = sc._jvm
+
+conf = sc._jsc.hadoopConfiguration()
+path = jvm.org.apache.hadoop.fs.Path(<span class="s">"s3://YOUR-BUCKET/logs/"</span>)
+fs = path.getFileSystem(conf)
+
+<span class="k">for</span> status <span class="k">in</span> fs.listStatus(path):
+    print(status.getPath().getName(), status.getLen())</code></pre>
+
+<div class="notice caution"><span class="h">CAUTION</span>
+<p>Each JVM method call is one socket round trip. In the loop above, each file causes three calls. For 100,000 files, this is slow. Do large loops in the JVM, or use a Spark API that returns a DataFrame.</p></div>
+
+<h3>Example: read a JVM setting</h3>
+<pre><code>print(spark._jvm.java.lang.System.getProperty(<span class="s">"java.version"</span>))
+print(spark._jsparkSession.version())       <span class="c"># Spark version from the JVM</span></code></pre>
+
+<h2><span class="n">08</span>Where the data goes</h2>
+<p>Py4J sends only small values and IDs. Large data uses other paths. Know these paths. They control the speed of your job.</p>
+
+<h3>Driver: <code>collect()</code> and <code>toPandas()</code></h3>
+<ol class="steps">
+  <li><b>Python sends one Py4J call.</b> The call asks the JVM to collect the rows.</li>
+  <li><b>The JVM opens a separate local socket server.</b> It returns only the port and a token through Py4J.</li>
+  <li><b>Python connects to that socket.</b> It reads the rows as pickled batches or as Arrow batches.</li>
+</ol>
+<pre><code>spark.conf.set(<span class="s">"spark.sql.execution.arrow.pyspark.enabled"</span>, <span class="s">"true"</span>)
+pdf = df.toPandas()     <span class="c"># Arrow batches over a local socket, not Py4J</span></code></pre>
+
+<h3>Executors: user-defined functions (UDFs)</h3>
+<p>A built-in function runs in the executor JVM. A Python UDF needs a Python process. The executor sends rows to a Python worker and reads the results back.</p>
+
+<div class="fig">
+<svg viewBox="0 0 680 330" role="img" aria-label="Three paths: built-in function stays in executor JVM; Python UDF sends pickled rows to a Python worker; pandas UDF sends Arrow batches">
+  <defs>
+    <marker id="aj2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="hjvm"/></marker>
+    <marker id="ap2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="hpy"/></marker>
+  </defs>
+  <text x="24" y="34" class="lbl">BUILT-IN</text>
+  <text x="24" y="52" class="mono">F.upper("name")</text>
+  <rect x="236" y="18" width="176" height="56" rx="8" class="boxjvm"/>
+  <text x="324" y="44" text-anchor="middle" class="tb">Executor JVM</text>
+  <text x="324" y="62" text-anchor="middle" class="tm">generated code</text>
+  <text x="440" y="44" class="t">No Python process.</text>
+  <text x="440" y="64" class="tm">Fastest path.</text>
+
+  <line x1="24" y1="104" x2="656" y2="104" stroke="var(--line)"/>
+
+  <text x="24" y="138" class="lbl">PYTHON UDF</text>
+  <text x="24" y="156" class="mono">@udf</text>
+  <rect x="236" y="122" width="176" height="56" rx="8" class="boxjvm"/>
+  <text x="324" y="148" text-anchor="middle" class="tb">Executor JVM</text>
+  <text x="324" y="166" text-anchor="middle" class="tm">serializes rows</text>
+  <rect x="480" y="122" width="176" height="56" rx="8" class="boxpy"/>
+  <text x="568" y="148" text-anchor="middle" class="tb">Python worker</text>
+  <text x="568" y="166" text-anchor="middle" class="tm">one call per row</text>
+  <path d="M412 140 H474" class="arjvm" marker-end="url(#aj2)"/>
+  <path d="M480 162 H418" class="arpy" marker-end="url(#ap2)"/>
+  <text x="446" y="198" text-anchor="middle" class="mono" style="font-size:11px">pickle</text>
+
+  <line x1="24" y1="220" x2="656" y2="220" stroke="var(--line)"/>
+
+  <text x="24" y="254" class="lbl">PANDAS UDF</text>
+  <text x="24" y="272" class="mono">@pandas_udf</text>
+  <rect x="236" y="238" width="176" height="56" rx="8" class="boxjvm"/>
+  <text x="324" y="264" text-anchor="middle" class="tb">Executor JVM</text>
+  <text x="324" y="282" text-anchor="middle" class="tm">column batches</text>
+  <rect x="480" y="238" width="176" height="56" rx="8" class="boxpy"/>
+  <text x="568" y="264" text-anchor="middle" class="tb">Python worker</text>
+  <text x="568" y="282" text-anchor="middle" class="tm">one call per batch</text>
+  <path d="M412 256 H474" class="arjvm" marker-end="url(#aj2)"/>
+  <path d="M480 278 H418" class="arpy" marker-end="url(#ap2)"/>
+  <text x="446" y="314" text-anchor="middle" class="mono" style="font-size:11px">Arrow</text>
+</svg>
+</div>
+<p class="figcap">None of these three paths uses Py4J. The executor JVM and the Python worker talk over a plain socket.</p>
+
+<pre><code><span class="k">from</span> pyspark.sql <span class="k">import</span> functions <span class="k">as</span> F
+<span class="k">import</span> pandas <span class="k">as</span> pd
+
+<span class="c"># 1. Built-in: stays in the JVM</span>
+df.select(F.upper(<span class="s">"name"</span>)).show()
+
+<span class="c"># 2. Python UDF: Python calls the function one time for each row</span>
+<span class="k">@</span>F.udf(<span class="s">"string"</span>)
+<span class="k">def</span> up_row(s):
+    <span class="k">return</span> s.upper()
+df.select(up_row(<span class="s">"name"</span>)).show()
+
+<span class="c"># 3. Pandas UDF: Python calls the function one time for each Arrow batch</span>
+<span class="k">@</span>F.pandas_udf(<span class="s">"string"</span>)
+<span class="k">def</span> up_batch(s: pd.Series) -&gt; pd.Series:
+    <span class="k">return</span> s.str.upper()
+df.select(up_batch(<span class="s">"name"</span>)).show()</code></pre>
+
+<div class="notice note"><span class="h">NOTE</span>
+<p>When you define a UDF, Python pickles the function with <code>cloudpickle</code>. Py4J sends those bytes to the driver JVM one time. Spark then sends the bytes to the executors with the tasks.</p></div>
+
+<h2><span class="n">09</span>Python on the executors</h2>
+<p>A UDF does not run on one executor only. It runs on each executor that processes a partition of that stage. Each task applies the UDF to its part of the data.</p>
+
+<h3>What occurs on each executor</h3>
+<ol class="steps">
+  <li><b>The function arrives.</b> The pickled bytes of your function come to the executor with the task.</li>
+  <li><b>The executor JVM starts a Python worker.</b> It starts the worker on the same machine, or it uses a worker that already runs.</li>
+  <li><b>The JVM sends the rows.</b> It sends them through a local socket, as pickle or as Arrow batches.</li>
+  <li><b>The worker runs your code.</b> It makes the function again from the bytes. It imports the libraries that the function uses. It calculates the results and sends them back.</li>
+  <li><b>The JVM continues the task.</b> It puts the results into the row stream.</li>
+</ol>
+
+<h3>When an executor starts Python</h3>
+<div class="tbl"><table>
+<thead><tr><th>Operation</th><th>Python worker</th></tr></thead>
+<tbody>
+<tr><td>DataFrame and SQL with built-in functions: <code>filter</code>, <code>groupBy</code>, <code>join</code>, <code>F.upper</code>, <code>spark.sql(...)</code></td><td class="no">No</td></tr>
+<tr><td>Python UDF: <code>@udf</code>, <code>@pandas_udf</code></td><td class="ok">Yes</td></tr>
+<tr><td><code>mapInPandas</code>, <code>applyInPandas</code>, <code>mapInArrow</code></td><td class="ok">Yes</td></tr>
+<tr><td>All RDD operations from Python: <code>rdd.map</code>, <code>rdd.filter</code>, <code>df.rdd...</code></td><td class="ok">Yes</td></tr>
+<tr><td><code>df.foreach</code>, <code>df.foreachPartition</code></td><td class="ok">Yes</td></tr>
+</tbody></table></div>
+<p>Most PySpark jobs use at least one of these operations. Thus, install Python on all executor nodes.</p>
+
+<h3>What each executor node must have</h3>
+<ul>
+  <li><b>A Python interpreter.</b> Spark uses the path in <code>spark.pyspark.python</code> or <code>PYSPARK_PYTHON</code>. The minor version must be the same as the driver's version.</li>
+  <li><b>All the libraries that your UDFs import.</b> For example: pandas, numpy, your own modules. Pandas UDFs also need pyarrow.</li>
+  <li><b>PySpark itself is not necessary.</b> <code>spark-submit</code> sends <code>pyspark.zip</code> and the Py4J zip to the executors. It adds them to <code>PYTHONPATH</code>.</li>
+</ul>
+
+<pre><code><span class="c"># Error when the versions are different</span>
+Python in worker has different version 3.9 than that in driver 3.11
+
+<span class="c"># Error when a library is only on the driver</span>
+ModuleNotFoundError: No module named 'pandas'</code></pre>
+
+<div class="notice warning"><span class="h">WARNING</span>
+<p>Do not install a library only on the driver, for example with <code>pip install</code> in a notebook. The driver can import it, but the UDF fails on the executors.</p></div>
+
+<h3>Send one Python environment to all executors</h3>
+<pre><code><span class="c"># Pack a virtual environment</span>
+python -m venv env &amp;&amp; source env/bin/activate
+pip install pandas pyarrow venv-pack
+venv-pack -o env.tar.gz
+
+<span class="c"># Each executor unpacks the archive into its container directory</span>
+spark-submit \
+  --archives env.tar.gz#env \
+  --conf spark.pyspark.python=./env/bin/python \
+  app.py</code></pre>
+<p>Other methods: on EMR, use a bootstrap action to install packages on each node. On Kubernetes or EMR on EKS, put the Python environment in the container image.</p>
+
+<h2><span class="n">10</span>Calls from the JVM to Python</h2>
+<p>Py4J also works in the opposite direction. PySpark starts a Py4J <b>callback server</b> in the Python driver process. The JVM can then call a Python object.</p>
+
+<div class="fig">
+<svg viewBox="0 0 680 190" role="img" aria-label="Driver JVM streaming engine calls Python foreachBatch function through the Py4J callback server">
+  <defs>
+    <marker id="aw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="hp"/></marker>
+  </defs>
+  <rect x="408" y="30" width="236" height="120" rx="10" class="boxjvm"/>
+  <text x="426" y="58" class="tb">Driver JVM</text>
+  <text x="426" y="84" class="t">Streaming engine</text>
+  <text x="426" y="108" class="tm">"batch 7 is ready"</text>
+  <text x="426" y="128" class="tm">holds a proxy of your function</text>
+
+  <rect x="36" y="30" width="236" height="120" rx="10" class="boxpy"/>
+  <text x="54" y="58" class="tb">Python driver</text>
+  <text x="54" y="84" class="t">Py4J callback server</text>
+  <text x="54" y="108" class="mono">save_batch(df, 7)</text>
+  <text x="54" y="128" class="tm">your code runs here</text>
+
+  <path d="M404 90 H280" class="ar" marker-end="url(#aw2)"/>
+  <text x="342" y="80" text-anchor="middle" class="mono" style="fill:var(--wire);font-weight:600">call</text>
+  <text x="342" y="112" text-anchor="middle" class="tm">2nd Py4J socket</text>
+</svg>
+</div>
+
+<pre><code><span class="k">def</span> save_batch(batch_df, batch_id):
+    <span class="c"># batch_df is a Python wrapper around a JVM Dataset</span>
+    batch_df.write.mode(<span class="s">"append"</span>).parquet(<span class="s">"/tmp/out"</span>)
+
+query = (spark.readStream.format(<span class="s">"rate"</span>).load()
+         .writeStream.foreachBatch(save_batch)
+         .start())</code></pre>
+<p>Other features that use callbacks: <code>StreamingQueryListener</code> in Python, and the old DStream API.</p>
+
+<div class="notice warning"><span class="h">WARNING</span>
+<p>Do not stop the Python driver while a streaming query runs. The JVM cannot call the callback. The query fails.</p></div>
+
+<h2><span class="n">11</span>Errors from the JVM</h2>
+<p>When a JVM method throws an exception, Py4J sends the error back. Python raises <code>py4j.protocol.Py4JJavaError</code>. PySpark converts many common Spark errors to Python classes, for example <code>AnalysisException</code>.</p>
+
+<pre><code><span class="k">from</span> py4j.protocol <span class="k">import</span> Py4JJavaError
+<span class="k">from</span> pyspark.errors <span class="k">import</span> AnalysisException
+
+<span class="c"># PySpark converts this one</span>
+<span class="k">try</span>:
+    spark.sql(<span class="s">"SELECT * FROM missing_table"</span>)
+<span class="k">except</span> AnalysisException <span class="k">as</span> e:
+    print(<span class="s">"Spark error:"</span>, e)
+
+<span class="c"># A raw JVM call keeps the Py4J error</span>
+<span class="k">try</span>:
+    spark._jvm.java.lang.Integer.parseInt(<span class="s">"abc"</span>)
+<span class="k">except</span> Py4JJavaError <span class="k">as</span> e:
+    print(e.java_exception.getClass().getName())
+    <span class="c"># java.lang.NumberFormatException</span></code></pre>
+
+<div class="notice note"><span class="h">NOTE</span>
+<p>Read the Java stack trace below the Python trace. The first <code>Caused by:</code> line usually shows the real cause.</p></div>
+
+<h2><span class="n">12</span>Java and Scala applications: no Python</h2>
+<p>A Java or Scala Spark application does not use Python.</p>
+<ul>
+  <li><b>The driver is one JVM.</b> Your <code>main()</code> method calls the Spark API directly. There is no Python process and no Py4J gateway.</li>
+  <li><b>The executors run only JVM code.</b> Your functions are compiled bytecode. They run as threads in the executor JVM. No Python worker starts.</li>
+  <li><b>You do not install Python.</b> You send a JAR file. Usually it is a fat JAR that contains your dependencies.</li>
+</ul>
+<pre><code>spark-submit \
+  --class com.example.MyJob \
+  --master yarn \
+  my-job.jar</code></pre>
+
+<div class="notice note"><span class="h">NOTE</span>
+<p>Python is necessary only if you start it yourself. For example, <code>rdd.pipe("python3 script.py")</code> runs an external program on each partition. Then each executor node must have Python.</p></div>
+
+<p>For DataFrame and SQL code with built-in functions, PySpark and Scala have almost the same speed. Both send the same plan to the same JVM engine. The difference occurs with UDFs. A Scala UDF runs in the executor JVM. A Python UDF must send the data to a Python worker.</p>
+
+<h2><span class="n">13</span>Spark Connect: no Py4J</h2>
+<p>Spark 3.4 and later have Spark Connect. In this mode, the Python client does not start a JVM. It sends query plans to a remote server with gRPC.</p>
+<pre><code>spark = SparkSession.builder.remote(<span class="s">"sc://spark-host:15002"</span>).getOrCreate()
+spark.range(5).show()     <span class="c"># works</span>
+spark._jvm                <span class="c"># fails: no JVM gateway in Connect mode</span></code></pre>
+<p>Code that uses <code>_jvm</code>, <code>_jsc</code> or <code>_jdf</code> does not work with Spark Connect. Use only the public API if your code must run in both modes.</p>
+
+<h2><span class="n">14</span>Rules</h2>
+<div class="tbl"><table>
+<thead><tr><th></th><th>Rule</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td class="ok">DO</td><td>Use built-in functions before UDFs.</td><td>The data stays in the JVM.</td></tr>
+<tr><td class="ok">DO</td><td>Use pandas UDFs when you need Python code.</td><td>Arrow batches cost less than one call per row.</td></tr>
+<tr><td class="ok">DO</td><td>Enable Arrow for <code>toPandas()</code>.</td><td>The transfer is faster.</td></tr>
+<tr><td class="ok">DO</td><td>Use the same Python minor version on the driver and the executors.</td><td>PySpark stops the task if the versions are different.</td></tr>
+<tr><td class="ok">DO</td><td>Install UDF libraries on all executors, or send them with <code>--archives</code>.</td><td>The UDF runs on the executors, not on the driver.</td></tr>
+<tr><td class="ok">DO</td><td>Increase <code>spark.executor.memoryOverhead</code> for heavy Python UDFs.</td><td>Python workers use memory outside the JVM heap.</td></tr>
+<tr><td class="no">DO NOT</td><td>Call JVM methods in a large Python loop.</td><td>Each call is one socket round trip.</td></tr>
+<tr><td class="no">DO NOT</td><td>Use the SparkSession in a UDF.</td><td>Executors have no Py4J gateway.</td></tr>
+<tr><td class="no">DO NOT</td><td>Use <code>_jvm</code> in code for Spark Connect.</td><td>Connect has no local JVM.</td></tr>
+</tbody></table></div>
+
+<hr>
+<p class="foot">Names and internals refer to PySpark 3.x and 4.x with Py4J 0.10.9.x. The wire format in section 06 is simplified to show the structure.</p>
+</div>
+</body>
+</html>

@@ -5,6 +5,7 @@ Technical guides and reference notes.
 ## Spark and HBase
 
 - [Apache Spark Handbook + HBase (visual guide)](docs/spark-hbase-visual-guide.html)
+- [PySpark and Py4J: how Python controls the Spark JVM (visual guide)](docs/pyspark-py4j-guide.html)
 - [Finding HBase / EMR connection values](docs/emr-hbase-connection-values.md)
 - [Who talks to whom in Hive: HiveServer2, Metastore service, Thrift, Beeline, Tez, Oozie hive2 and Spark (interactive)](docs/hive-components-map.html)
 

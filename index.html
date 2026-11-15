@@ -22,6 +22,7 @@
       --hue-spark: #c9501a;
       --hue-aws: #2a66c9;
       --hue-security: #1b7f52;
+      --hue-go: #0a7790;
       --hue-terminal: #6d48cc;
       --hue-charts: #b8336f;
       --hue-scripts: #4f5d6c;
@@ -45,6 +46,7 @@
         --hue-spark: #f08350;
         --hue-aws: #6c9ff2;
         --hue-security: #4cc38a;
+        --hue-go: #4fc3dc;
         --hue-terminal: #a68cf4;
         --hue-charts: #ea78ab;
         --hue-scripts: #9aa7b6;
@@ -182,7 +184,7 @@
       </div>
       <div class="hero">
         <h1>Technical guides and interactive explainers</h1>
-        <p>Practical notes for Spark, YARN, Hive and HBase on Amazon EMR, secure file transfer, and everyday terminal tools, with scripts to go with them.</p>
+        <p>Practical notes for Spark, YARN, Hive and HBase on Amazon EMR, secure file transfer, Go, and everyday terminal tools, with scripts to go with them.</p>
         <ul class="stats" id="stats" hidden>
           <li><b data-count="guide"></b> guides</li>
           <li><b data-count="interactive"></b> interactive</li>
@@ -304,6 +306,18 @@
           <div class="meta"><span class="badge">Incident explainer</span><span class="fmt">HTML</span></div>
           <h3>Eight keys, 256 guesses: the eMudhra weak CA keys</h3>
           <p>How eight trusted CA keys were made weak, how a free tool found them, how root programs and browsers responded, and how Go blocked them in crypto/x509. With drawings of certificate chains and key ceremonies.</p>
+          <div class="go"><span>Read</span> →</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="topic" style="--hue: var(--hue-go)" aria-labelledby="t-go">
+      <div class="topic-head"><span class="dot" aria-hidden="true"></span><h2 id="t-go">Go</h2><span class="count"></span></div>
+      <div class="grid">
+        <a class="card" href="docs/go-at-17-field-guide.html" data-type="guide" data-tags="go golang 1.26 1.27 generics generic methods json v2 jsontext goroutine leak pprof uuid errors.astype httptest synctest green tea gc simd tls post-quantum hpke mldsa go fix modernizers gopls govulncheck upgrade beginner">
+          <div class="meta"><span class="badge">Field guide</span><span class="fmt">HTML</span></div>
+          <h3>Go at 17: one year of changes, in code</h3>
+          <p>Each change in Go 1.26 and Go 1.27 as before-and-after code, with a beginner explanation, a complete program and its recorded output. Includes an upgrade checklist.</p>
           <div class="go"><span>Read</span> →</div>
         </a>
       </div>

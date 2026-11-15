@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go at 17 Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: technical-manual page. sticky contents rail, numbered tasks, before/after code pairs */
+  --bg:#f2f5f6; --panel:#ffffff; --ink:#14212b; --muted:#566673; --line:#cdd6dc;
+  --accent:#00728c; --accent-soft:#dcf0f4; --warn:#a84a08; --warn-soft:#fbe9d8; --code:#f7f9fa;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161c; --panel:#162028; --ink:#e2e9ed; --muted:#93a4af; --line:#2a3944;
+  --accent:#52c6de; --accent-soft:#11323b; --warn:#f0a565; --warn-soft:#3a2613; --code:#0b1217; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e161c; --panel:#162028; --ink:#e2e9ed; --muted:#93a4af; --line:#2a3944;
+  --accent:#52c6de; --accent-soft:#11323b; --warn:#f0a565; --warn-soft:#3a2613; --code:#0b1217; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--body)}
+a{color:var(--accent)} a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);padding:.08em .32em;border-radius:3px}
+.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px;max-width:1260px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0;font-size:13.5px}
+nav .brand{font:600 15px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+nav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+nav>ol>li{margin-top:10px}
+nav a{display:block;padding:2px 0;color:var(--ink);text-decoration:none}
+nav a:hover{color:var(--accent)}
+nav .p{font-weight:600}
+nav ol ol a{color:var(--muted);padding-left:14px;border-left:1px solid var(--line)}
+main{padding:36px 0 80px;min-width:0}
+header.top{border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:28px}
+.eyebrow{font:600 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(34px,5vw,52px)/1.05 var(--display);margin:.15em 0 .3em;text-wrap:balance}
+h2{font:600 30px/1.15 var(--display);margin:0;text-wrap:balance}
+h3{font:600 21px/1.25 var(--display);margin:0;text-wrap:balance}
+h4{font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:26px 0 6px}
+p,li{max-width:70ch} p{margin:.55em 0}
+.lede{font-size:18px;color:var(--muted);max-width:62ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;color:var(--muted);margin-top:14px}
+.meta b{color:var(--ink);font-weight:600}
+section.part{margin-top:56px}
+.parthead{display:flex;gap:16px;align-items:baseline;border-top:2px solid var(--ink);padding-top:14px}
+.parthead .n{font:600 30px var(--display);color:var(--accent);font-variant-numeric:tabular-nums}
+.parthead p{color:var(--muted);margin:.2em 0 0}
+article{margin-top:34px;padding-top:22px;border-top:1px solid var(--line)}
+.thead{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;margin-bottom:6px}
+.thead .n{font:600 15px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.tag{font:500 11.5px var(--mono);padding:2px 8px;border:1px solid var(--line);border-radius:99px;color:var(--muted);white-space:nowrap}
+.tag.v{border-color:var(--accent);color:var(--accent)} .tag.x{border-color:var(--warn);color:var(--warn)}
+.tag.z{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.ba{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:14px;margin:16px 0}
+.code{border:1px solid var(--line);border-radius:6px;background:var(--code);min-width:0;margin:16px 0;overflow:hidden}
+.ba .code{margin:0}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px 6px 12px;border-bottom:1px solid var(--line);
+  font:600 12px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.code.before{border-top:3px solid var(--warn)} .code.after{border-top:3px solid var(--accent)}
+.ch.before span{color:var(--warn)} .ch.after span{color:var(--accent)}
+.cp{font:500 11px var(--mono);color:var(--muted);background:none;border:1px solid var(--line);border-radius:4px;padding:2px 8px;cursor:pointer}
+.cp:hover{color:var(--accent);border-color:var(--accent)}
+pre{margin:0;padding:12px 14px;overflow-x:auto;font:13px/1.55 var(--mono);tab-size:4}
+pre code{background:none;padding:0;font-size:inherit}
+pre .c{color:var(--muted);font-style:italic} pre .k{color:var(--accent);font-weight:500} pre .s{color:var(--warn)}
+.note{border-left:3px solid var(--accent);background:var(--panel);padding:10px 14px;font-size:14.5px;margin:14px 0;max-width:78ch}
+.note b{font:600 12px var(--display);letter-spacing:.1em;margin-right:8px;color:var(--accent)}
+.note.caution{border-color:var(--warn)} .note.caution b{color:var(--warn)}
+figure{margin:20px 0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 14px 10px}
+.svgw{overflow-x:auto} svg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto;color:var(--ink)}
+figcaption{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);margin-top:10px;padding-top:8px;max-width:none}
+svg .bx{fill:var(--bg);stroke:currentColor;stroke-width:1.1} svg .pn{fill:none;stroke:var(--line);stroke-width:1}
+svg .ac{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5} svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+svg .dot{fill:var(--accent);stroke:none}
+svg .ln{stroke:currentColor;stroke-width:1.2;fill:none} svg .lnb{stroke:var(--accent);stroke-width:1.6;fill:none} svg .lnc{stroke:var(--warn);stroke-width:1.6;fill:none}
+svg .mka{fill:currentColor} svg .mkb{fill:var(--accent)} svg .mkc{fill:var(--warn)}
+svg text{fill:currentColor;font-family:var(--body);font-size:12.5px}
+svg .th{font-weight:600;font-size:13px} svg .ts{font-size:11.5px;fill:var(--muted)} svg .tm{font-family:var(--mono);font-size:12px}
+.tw{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+th{font:600 12px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left}
+th,td{padding:8px 12px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+ol,ul{padding-left:1.3em;margin:.5em 0} li{margin:.25em 0}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:18px 0}
+.rules div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:14.5px}
+.rules b{display:block;font:600 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.explain{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:6px;padding:4px 16px 12px;margin:16px 0;font-size:15px}
+.explain h5{font:600 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:12px 0 2px}
+.explain p{margin:.35em 0;max-width:78ch} .explain ul{margin:.3em 0} .explain li{max-width:78ch}
+details.run{margin:12px 0}
+details.run>summary{cursor:pointer;font:600 12px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);padding:8px 12px;border:1px dashed var(--line);border-radius:6px;background:var(--panel)}
+details.run>summary:hover{border-color:var(--accent)}
+details.run[open]>summary{margin-bottom:10px}
+details.run .code{margin:10px 0}
+.code.out{border-left:3px solid var(--muted)}
+.runnote{font-size:14px;color:var(--muted);max-width:78ch}
+footer{margin-top:60px;border-top:2px solid var(--ink);padding-top:16px;font-size:13.5px;color:var(--muted)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav{position:static;max-height:none;padding:20px 0 0;border-bottom:1px solid var(--line)}
+  nav ol ol{display:none} nav>ol{flex-direction:row;flex-wrap:wrap;gap:4px 16px;padding-bottom:14px} nav>ol>li{margin:0}}
+</style></head>
+<body><div class="wrap">
+<nav aria-label="Contents"><div class="brand">Go at 17</div><ol><li><a class="p" href="#language">1 Language</a><ol><li><a href="#new-expr">1.1 new with a value</a></li><li><a href="#self-ref">1.2 Type constraints that refer to themselves</a></li><li><a href="#generic-methods">1.3 Generic methods</a></li><li><a href="#inference">1.4 More type inference for generic functions</a></li><li><a href="#struct-keys">1.5 Struct literal keys for embedded fields</a></li></ol></li><li><a class="p" href="#library">2 Standard library</a><ol><li><a href="#json-v2">2.1 encoding/json/v2 and jsontext</a></li><li><a href="#leak">2.2 Goroutine leak profile</a></li><li><a href="#http-drain">2.3 HTTP/1 connections stay open after Close</a></li><li><a href="#uuid">2.4 Package uuid</a></li><li><a href="#astype">2.5 errors.AsType</a></li><li><a href="#testserver">2.6 httptest.NewTestServer with virtual time</a></li><li><a href="#perf-lib">2.7 Faster packages</a></li></ol></li><li><a class="p" href="#runtime">3 Runtime and hardware</a><ol><li><a href="#greentea">3.1 Green Tea garbage collector</a></li><li><a href="#simd">3.2 SIMD packages</a></li><li><a href="#stack-slices">3.3 Slice backing stores on the stack</a></li><li><a href="#small-alloc">3.4 Small allocations and cgo calls</a></li></ol></li><li><a class="p" href="#security">4 Security</a><ol><li><a href="#pq-tls">4.1 Post-quantum key exchange in TLS</a></li><li><a href="#hpke">4.2 crypto/hpke</a></li><li><a href="#mldsa">4.3 crypto/mldsa</a></li><li><a href="#random">4.4 Secure random source in crypto</a></li><li><a href="#hardening">4.5 Runtime hardening</a></li><li><a href="#incident">4.6 The eMudhra incident and govulncheck</a></li></ol></li><li><a class="p" href="#tooling">5 Tools</a><ol><li><a href="#gofix">5.1 go fix and the modernizers</a></li><li><a href="#inline">5.2 The source-level inliner</a></li><li><a href="#gopls">5.3 gopls</a></li><li><a href="#pkgsite">5.4 pkg.go.dev API and go doc</a></li></ol></li><li><a class="p" href="#ahead">6 Plans for the next year</a><ol><li><a href="#next-lang">6.1 Language and library</a></li><li><a href="#next-rest">6.2 Runtime, toolchain and community</a></li></ol></li><li><a class="p" href="#upgrade">7 Upgrade checklist</a><ol><li><a href="#upgrade-steps">7.1 Procedure</a></li><li><a href="#switches">7.2 Switches that bring back an old behavior</a></li></ol></li><li><a class="p" href="#more">8 More changes in Go 1.27</a><ol><li><a href="#more-lib">8.1 Small additions to the standard library</a></li><li><a href="#more-tools">8.2 Tools, runtime and platforms</a></li></ol></li><li><a class="p" href="#credits">9 Credits</a></li></ol></nav>
+<main>
+<header class="top">
+  <div class="eyebrow">Field guide · November 2025 to November 2026</div>
+  <h1>Go at 17: one year of changes, in code</h1>
+  <p class="lede">This guide shows each change from the Go 17th birthday post as code. Where a change replaces an old pattern, you see the code before and after.</p>
+  <div class="meta"><span><b>Releases:</b> Go 1.26 (February), Go 1.27 (August)</span><span><b>Source:</b> <a href="https://go.dev/blog/17years">go.dev/blog/17years</a></span><span><b>Written by:</b> Claude Opus 5.5</span></div>
+</header>
+<figure><div class="svgw"><svg viewBox="0 0 760 172" role="img" aria-label="Timeline from November 2025 to November 2026 with Go 1.26 in February, the pkg.go.dev API in May, Go 1.27 in August, the urgent security release in October, and the 17th birthday on 10 November." style="min-width:620px"><defs><marker id="m11a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m11b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m11c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><line x1="40" y1="85" x2="720" y2="85" class="ln"/><line x1="40.0" y1="80" x2="40.0" y2="90" class="ln"/><text x="40.0" y="106" class="ts" text-anchor="middle">Nov</text><line x1="96.7" y1="80" x2="96.7" y2="90" class="ln"/><text x="96.7" y="106" class="ts" text-anchor="middle">Dec</text><line x1="153.3" y1="80" x2="153.3" y2="90" class="ln"/><text x="153.3" y="106" class="ts" text-anchor="middle">Jan</text><line x1="210.0" y1="80" x2="210.0" y2="90" class="ln"/><text x="210.0" y="106" class="ts" text-anchor="middle">Feb</text><line x1="266.7" y1="80" x2="266.7" y2="90" class="ln"/><text x="266.7" y="106" class="ts" text-anchor="middle">Mar</text><line x1="323.4" y1="80" x2="323.4" y2="90" class="ln"/><text x="323.4" y="106" class="ts" text-anchor="middle">Apr</text><line x1="380.0" y1="80" x2="380.0" y2="90" class="ln"/><text x="380.0" y="106" class="ts" text-anchor="middle">May</text><line x1="436.7" y1="80" x2="436.7" y2="90" class="ln"/><text x="436.7" y="106" class="ts" text-anchor="middle">Jun</text><line x1="493.4" y1="80" x2="493.4" y2="90" class="ln"/><text x="493.4" y="106" class="ts" text-anchor="middle">Jul</text><line x1="550.0" y1="80" x2="550.0" y2="90" class="ln"/><text x="550.0" y="106" class="ts" text-anchor="middle">Aug</text><line x1="606.7" y1="80" x2="606.7" y2="90" class="ln"/><text x="606.7" y="106" class="ts" text-anchor="middle">Sep</text><line x1="663.4" y1="80" x2="663.4" y2="90" class="ln"/><text x="663.4" y="106" class="ts" text-anchor="middle">Oct</text><line x1="720.0" y1="80" x2="720.0" y2="90" class="ln"/><text x="720.0" y="106" class="ts" text-anchor="middle">Nov</text><text x="40" y="122" class="ts" text-anchor="middle">2025</text><text x="153.3" y="122" class="ts" text-anchor="middle">2026</text><circle cx="215" cy="85" r="6" class="ac"/><line x1="215" y1="62" x2="215" y2="78" class="lnb"/><text x="215" y="38" class="th" text-anchor="middle">Go 1.26</text><text x="215" y="54" class="ts" text-anchor="middle">new(expr), Green Tea, go fix</text><circle cx="380" cy="85" r="6" class="ac"/><line x1="380" y1="62" x2="380" y2="78" class="lnb"/><text x="380" y="38" class="th" text-anchor="middle">pkg.go.dev API</text><text x="380" y="54" class="ts" text-anchor="middle">official launch</text><circle cx="584" cy="85" r="6" class="ac"/><line x1="584" y1="62" x2="584" y2="78" class="lnb"/><text x="584" y="38" class="th" text-anchor="middle">Go 1.27</text><text x="584" y="54" class="ts" text-anchor="middle">generic methods, json/v2</text><circle cx="697" cy="85" r="6" class="wn"/><line x1="697" y1="92" x2="697" y2="132" class="lnc"/><text x="705" y="146" class="th" text-anchor="end">Go 1.27.3 and Go 1.26.10</text><text x="705" y="162" class="ts" text-anchor="end">first URGENT-track security release</text><circle cx="724" cy="85" r="7" class="dot"/><text x="740" y="38" class="th" text-anchor="end">10 Nov</text><text x="740" y="54" class="ts" text-anchor="end">17 years</text><line x1="724" y1="62" x2="724" y2="77" class="lnb"/></svg></div><figcaption>The year in one line. Two feature releases, one API launch, and one urgent security release.</figcaption></figure>
+<h4>How to read this guide</h4>
+<div class="rules">
+  <div><b>Code pairs</b>The left block shows the old pattern. The right block shows the new pattern. The label gives the release.</div>
+  <div><b>Tags</b>A tag gives the release of the change. The tag <i>No code change</i> shows that an upgrade is sufficient.</div>
+  <div><b>Explanations</b>A box below each example tells you what the code does and describes its data structures. Go experience is not necessary.</div>
+  <div><b>Run it</b>Open <i>Complete program and output</i> below an example. You get a full file that you can copy and run, and the output that was recorded.</div>
+</div>
+<h4>Basic terms</h4>
+<p>The explanations use these terms. Read them first if you are new to programming.</p>
+<div class="rules">
+  <div><b>Package</b>A group of Go files with one purpose. <code>import</code> lets your file use a package. <code>fmt</code> prints text. <code>time</code> works with time.</div>
+  <div><b>Variable</b>A name for a value in memory. <code>x := 3</code> declares the variable <code>x</code> and gives it the value 3.</div>
+  <div><b>Type</b>The kind of a value. <code>int</code> is a whole number. <code>string</code> is text. <code>bool</code> is true or false. <code>byte</code> is one unit of raw data.</div>
+  <div><b>Function</b>A named block of code. It accepts inputs and returns results. The program starts in <code>func main()</code>.</div>
+  <div><b>Method</b>A function that belongs to a type. You call it with a dot: <code>value.Method()</code>.</div>
+  <div><b>Struct</b>A group of named fields that make one value, for example a user with an ID and a name.</div>
+  <div><b>Pointer</b>The address of a value in memory. <code>*int</code> is a pointer to an <code>int</code>. <code>&amp;x</code> is the address of <code>x</code>. <code>nil</code> means no value.</div>
+  <div><b>Slice</b>An ordered list that can grow. <code>[]int</code> is a slice of whole numbers. <code>append</code> adds an item.</div>
+  <div><b>Map</b>A table that finds a value from a key. <code>map[string]int</code> finds a whole number from text.</div>
+  <div><b>Interface</b>A list of methods. Each type that has those methods can be used where the interface is necessary.</div>
+  <div><b>Generic</b>Code with a placeholder for a type, written in square brackets: <code>[T any]</code>. One function then works for many types.</div>
+  <div><b>Error</b>A value that tells you that an operation failed. A function returns it as its last result. <code>nil</code> means no error.</div>
+  <div><b>Goroutine</b>A function that runs at the same time as other code. The word <code>go</code> starts it.</div>
+  <div><b>Channel</b>A pipe between goroutines. One goroutine sends a value and a different goroutine receives it.</div>
+  <div><b>Comment</b>Text after <code>//</code>. It is for the reader. The compiler ignores it.</div>
+</div>
+<h4>Prepare a work area</h4>
+<ol>
+  <li>Install Go 1.27 or later. Make sure with <code>go version</code>.</li>
+  <li>Make a module: <code>mkdir go17 &amp;&amp; cd go17 &amp;&amp; go mod init go17</code></li>
+  <li>Copy an example into <code>main.go</code>. Add <code>package main</code> and the imports if the example is a fragment.</li>
+  <li>Start the program: <code>go run .</code></li>
+</ol>
+<p class="note note"><b>NOTE</b> The examples were compiled and run with Go 1.26.6 and Go 1.27.4 on linux/amd64. Three items need the network and were not tested: the <code>github.com/google/uuid</code> example, the <code>gopls</code> and <code>govulncheck</code> commands, and <code>go doc</code> with a version. The performance values were not measured. The complete programs and their outputs were recorded with Go 1.27.4.</p>
+<section class="part" id="language"><div class="parthead"><span class="n">1</span><div><h2>Language</h2><p>Five changes. Each change removes a workaround. Old code continues to compile.</p></div></div><article id="new-expr"><div class="thead"><span class="n">1.1</span><h3>new with a value</h3><span class="tag v">Go 1.26</span></div><p>The built-in function <code>new</code> now accepts an expression. The expression gives the initial value of the variable.</p><p>Use this change for optional fields that are pointers. JSON and protocol buffer structures frequently have such fields.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Patch <span class="k">struct</span> {
+	Name    *string <span class="s">`json:"name,omitempty"`</span>
+	Retries *int    <span class="s">`json:"retries,omitempty"`</span>
+}
+
+<span class="c">// A helper function was necessary.</span>
+<span class="k">func</span> ptr[T any](v T) *T { <span class="k">return</span> &amp;v }
+
+<span class="k">func</span> main() {
+	p := Patch{
+		Name:    ptr(<span class="s">"payments"</span>),
+		Retries: ptr(<span class="n">3</span>),
+	}
+	_ = p
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Patch <span class="k">struct</span> {
+	Name    *string <span class="s">`json:"name,omitempty"`</span>
+	Retries *int    <span class="s">`json:"retries,omitempty"`</span>
+}
+
+<span class="k">func</span> main() {
+	p := Patch{
+		Name:    new(<span class="s">"payments"</span>), <span class="c">// *string</span>
+		Retries: new(<span class="n">3</span>),          <span class="c">// *int</span>
+	}
+	<span class="c">// An expression is also permitted.</span>
+	deadline := new(time.Now().Add(time.Hour)) <span class="c">// *time.Time</span>
+	_, _ = p, deadline
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">type</span> Patch <span class="k">struct</span> {
+	Name    *string <span class="s">`json:"name,omitempty"`</span>
+	Retries *int    <span class="s">`json:"retries,omitempty"`</span>
+}
+
+<span class="k">func</span> main() {
+	p := Patch{
+		Name:    new(<span class="s">"payments"</span>), <span class="c">// *string</span>
+		Retries: new(3),          <span class="c">// *int</span>
+	}
+	<span class="c">// An expression is also permitted.</span>
+	deadline := new(time.Now().Add(time.Hour)) <span class="c">// *time.Time</span>
+
+	<span class="c">// The star gets the value that the pointer points to.</span>
+	fmt.Println(*p.Name, *p.Retries)
+	fmt.Println(deadline.After(time.Now()))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+payments 3
+true</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>The two programs make a <code>Patch</code> value. A <code>Patch</code> describes a change to a record. Each field is optional: you fill only the fields that you want to change.</p><p>The old program needs a small helper function, <code>ptr</code>. It accepts a value and gives back the address of a copy of that value. The new program uses the built-in function <code>new</code> for the same work. <code>new("payments")</code> makes a new text variable that contains payments and gives you its address.</p><p>The line with <code>deadline</code> makes a pointer to a time that is one hour from now.</p><h5>Data structures</h5><ul><li><code>Patch</code> is a struct: a group of named fields. It has the fields <code>Name</code> and <code>Retries</code>.</li><li><code>*string</code> and <code>*int</code> are pointer types. A pointer holds the address of a value. A pointer can also be <code>nil</code>, which means that there is no value. A plain <code>int</code> cannot show the difference between 0 and "not given". A pointer can.</li><li>The text in backquotes after each field is a struct tag. It tells the JSON package which name to use for the field. <code>omitempty</code> tells it to leave out the field when the field is empty.</li><li><code>ptr[T any]</code> is a generic function. <code>T</code> is a placeholder for a type. Thus one function works for text, numbers and all other types.</li></ul></div><p class="note note"><b>NOTE</b> <code>new(T)</code> with a type continues to work. <code>new(3)</code> makes a pointer to an <code>int</code> variable with the value 3.</p></article><article id="self-ref"><div class="thead"><span class="n">1.2</span><h3>Type constraints that refer to themselves</h3><span class="tag v">Go 1.26</span></div><p>A generic type can now refer to itself in its type parameter list.</p><p>You can write a constraint that says: the method accepts the same type and returns the same type.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Compile error before Go 1.26:</span>
+<span class="c">// Adder refers to itself in its type parameter list.</span>
+<span class="c">//</span>
+<span class="c">//   type Adder[A Adder[A]] interface { Add(A) A }</span>
+
+<span class="c">// Workaround: write the constraint again</span>
+<span class="c">// in each function.</span>
+<span class="k">func</span> Sum[A <span class="k">interface</span>{ Add(A) A }](xs ...A) A {
+	<span class="k">var</span> total A
+	<span class="k">for</span> _, x := <span class="k">range</span> xs {
+		total = total.Add(x)
+	}
+	<span class="k">return</span> total
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Adder[A Adder[A]] <span class="k">interface</span> {
+	Add(A) A
+}
+
+<span class="k">type</span> Cents int64
+
+<span class="k">func</span> (c Cents) Add(d Cents) Cents { <span class="k">return</span> c + d }
+
+<span class="k">func</span> Sum[A Adder[A]](xs ...A) A {
+	<span class="k">var</span> total A
+	<span class="k">for</span> _, x := <span class="k">range</span> xs {
+		total = total.Add(x)
+	}
+	<span class="k">return</span> total
+}
+
+<span class="k">func</span> main() {
+	fmt.Println(Sum(Cents(<span class="n">250</span>), Cents(<span class="n">199</span>))) <span class="c">// 449</span>
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> <span class="s">"fmt"</span>
+
+<span class="k">type</span> Adder[A Adder[A]] <span class="k">interface</span> {
+	Add(A) A
+}
+
+<span class="k">type</span> Cents int64
+
+<span class="k">func</span> (c Cents) Add(d Cents) Cents { <span class="k">return</span> c + d }
+
+<span class="k">func</span> Sum[A Adder[A]](xs ...A) A {
+	<span class="k">var</span> total A
+	<span class="k">for</span> _, x := <span class="k">range</span> xs {
+		total = total.Add(x)
+	}
+	<span class="k">return</span> total
+}
+
+<span class="k">func</span> main() {
+	fmt.Println(Sum(Cents(250), Cents(199)))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+449</code></pre></div></details><div class="explain"><h5>What the code does</h5><p><code>Sum</code> adds a list of values and returns the total. It works for each type that has an <code>Add</code> method. The loop starts with an empty total. Then it adds the values one at a time.</p><p>The program adds 250 cents and 199 cents and prints 449.</p><p>In the old code, the rule "the type has an <code>Add</code> method" is in the declaration of <code>Sum</code>. You write it again in each function that needs it. In the new code the rule has a name, <code>Adder</code>, and each function can use that name.</p><h5>Data structures</h5><ul><li><code>Cents</code> is a new type that holds an <code>int64</code>, a whole number of 64 bits. Money in cents has no fractions, thus the arithmetic is exact.</li><li><code>func (c Cents) Add(d Cents) Cents</code> is a method: a function that belongs to the type <code>Cents</code>. You call it with a dot: <code>total.Add(x)</code>.</li><li><code>Adder[A]</code> is an interface: a list of methods that a type must have. This one says: type <code>A</code> has a method <code>Add</code> that accepts an <code>A</code> and returns an <code>A</code>. The interface uses its own name in its declaration. That was not permitted before Go 1.26.</li><li><code>xs ...A</code> lets the caller give any number of values. In the function, <code>xs</code> is a slice: an ordered list.</li><li><code>var total A</code> makes a variable with the zero value of its type. For a number type, the zero value is 0.</li></ul></div></article><article id="generic-methods"><div class="thead"><span class="n">1.3</span><h3>Generic methods</h3><span class="tag v">Go 1.27</span></div><p>A method declaration can now have its own type parameters. This limit was in the language from Go 1.18.</p><p>Before, a generic operation on a type was a package-level function. Now the operation can be a method of the type.</p><figure><div class="svgw"><svg viewBox="0 0 760 140" role="img" aria-label="A nested call reads from the inside out. A method chain reads from left to right." style="min-width:620px"><defs><marker id="m1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><rect x="10" y="10" width="360" height="120" rx="6" class="pn"/><rect x="390" y="10" width="360" height="120" rx="6" class="pn"/><text x="26" y="34" class="th" text-anchor="start">Before: package-level function</text><text x="406" y="34" class="th" text-anchor="start">Go 1.27: generic method</text><text x="26" y="70" class="tm" text-anchor="start">Map(Of(1,2,3,4).Filter(isEven), itoa)</text><text x="406" y="70" class="tm" text-anchor="start">Of(1,2,3,4).Filter(isEven).Map(itoa)</text><line x1="300" y1="92" x2="40" y2="92" class="lnc" marker-end="url(#m1c)"/><text x="26" y="114" class="ts" text-anchor="start">The last step is first in the text.</text><line x1="410" y1="92" x2="690" y2="92" class="lnb" marker-end="url(#m1b)"/><text x="406" y="114" class="ts" text-anchor="start">The text and the data go in the same direction.</text></svg></div><figcaption>A generic method keeps the operation in the namespace of the type. The call reads in the sequence of the data flow.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Stream[T any] <span class="k">struct</span>{ items []T }
+
+<span class="k">func</span> Of[T any](items ...T) Stream[T] { <span class="k">return</span> Stream[T]{items} }
+
+<span class="k">func</span> (s Stream[T]) Filter(keep <span class="k">func</span>(T) bool) Stream[T] {
+	<span class="k">var</span> out []T
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		<span class="k">if</span> keep(v) {
+			out = append(out, v)
+		}
+	}
+	<span class="k">return</span> Stream[T]{out}
+}
+
+<span class="c">// Map changes T to U. A method could not declare U.</span>
+<span class="k">func</span> Map[T, U any](s Stream[T], f <span class="k">func</span>(T) U) Stream[U] {
+	out := make([]U, <span class="n">0</span>, len(s.items))
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		out = append(out, f(v))
+	}
+	<span class="k">return</span> Stream[U]{out}
+}
+
+<span class="k">func</span> main() {
+	isEven := <span class="k">func</span>(n int) bool { <span class="k">return</span> n%<span class="n">2</span> == <span class="n">0</span> }
+	s := Map(Of(<span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span>, <span class="n">4</span>).Filter(isEven), strconv.Itoa)
+	fmt.Println(s.items) <span class="c">// [2 4]</span>
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Stream[T any] <span class="k">struct</span>{ items []T }
+
+<span class="k">func</span> Of[T any](items ...T) Stream[T] { <span class="k">return</span> Stream[T]{items} }
+
+<span class="k">func</span> (s Stream[T]) Filter(keep <span class="k">func</span>(T) bool) Stream[T] {
+	<span class="k">var</span> out []T
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		<span class="k">if</span> keep(v) {
+			out = append(out, v)
+		}
+	}
+	<span class="k">return</span> Stream[T]{out}
+}
+
+<span class="c">// The method declares its own type parameter U.</span>
+<span class="k">func</span> (s Stream[T]) Map[U any](f <span class="k">func</span>(T) U) Stream[U] {
+	out := make([]U, <span class="n">0</span>, len(s.items))
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		out = append(out, f(v))
+	}
+	<span class="k">return</span> Stream[U]{out}
+}
+
+<span class="k">func</span> main() {
+	isEven := <span class="k">func</span>(n int) bool { <span class="k">return</span> n%<span class="n">2</span> == <span class="n">0</span> }
+	s := Of(<span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span>, <span class="n">4</span>).Filter(isEven).Map(strconv.Itoa)
+	fmt.Println(s.items) <span class="c">// [2 4]</span>
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"strconv"</span>
+)
+
+<span class="k">type</span> Stream[T any] <span class="k">struct</span>{ items []T }
+
+<span class="k">func</span> Of[T any](items ...T) Stream[T] { <span class="k">return</span> Stream[T]{items} }
+
+<span class="k">func</span> (s Stream[T]) Filter(keep <span class="k">func</span>(T) bool) Stream[T] {
+	<span class="k">var</span> out []T
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		<span class="k">if</span> keep(v) {
+			out = append(out, v)
+		}
+	}
+	<span class="k">return</span> Stream[T]{out}
+}
+
+<span class="c">// The method declares its own type parameter U.</span>
+<span class="k">func</span> (s Stream[T]) Map[U any](f <span class="k">func</span>(T) U) Stream[U] {
+	out := make([]U, 0, len(s.items))
+	<span class="k">for</span> _, v := <span class="k">range</span> s.items {
+		out = append(out, f(v))
+	}
+	<span class="k">return</span> Stream[U]{out}
+}
+
+<span class="k">func</span> main() {
+	isEven := <span class="k">func</span>(n int) bool { <span class="k">return</span> n%2 == 0 }
+	s := Of(1, 2, 3, 4).Filter(isEven).Map(strconv.Itoa)
+	fmt.Println(s.items)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+[2 4]</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>The program makes a stream that holds the numbers 1, 2, 3 and 4. It keeps the even numbers (2 and 4). Then it changes each number to text. It prints <code>[2 4]</code>.</p><p><code>Filter</code> looks at each item and keeps it only if the function <code>keep</code> returns true. <code>Map</code> calls the function <code>f</code> on each item and collects the results.</p><p><code>Map</code> changes the item type, here from number to text. Thus it needs a second type placeholder, <code>U</code>. In the old code a method could not declare <code>U</code>, so <code>Map</code> was a separate function and the call reads from the inside out. In the new code <code>Map</code> is a method and the steps read from left to right.</p><h5>Data structures</h5><ul><li><code>Stream[T]</code> is a generic struct. It has one field, <code>items</code>, which is a slice of <code>T</code>. <code>Stream[int]</code> holds whole numbers. <code>Stream[string]</code> holds text.</li><li><code>func(T) bool</code> is a function type. In Go you can give a function to a different function as an argument. <code>isEven</code> and <code>strconv.Itoa</code> are used in this way.</li><li><code>strconv.Itoa</code> changes a whole number to text: 2 becomes "2".</li><li><code>make([]U, 0, len(s.items))</code> makes an empty slice with space for all the results. <code>append</code> adds one item to the end of a slice.</li><li><code>n%2 == 0</code> is true when the remainder of n divided by 2 is zero, thus when n is even.</li></ul></div><p>The standard library uses the feature. <code>math/rand/v2</code> has a new generic method <code>Rand.N</code>.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code>r := rand.New(rand.NewPCG(<span class="n">1</span>, <span class="n">2</span>))
+
+<span class="c">// Convert to int64, then convert back.</span>
+wait := time.Duration(r.Int64N(int64(<span class="n">5</span> * time.Second)))</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code>r := rand.New(rand.NewPCG(<span class="n">1</span>, <span class="n">2</span>))
+
+<span class="c">// N accepts each integer type.</span>
+wait := r.N(<span class="n">5</span> * time.Second) <span class="c">// time.Duration</span></code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"math/rand/v2"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">func</span> main() {
+	r := rand.New(rand.NewPCG(1, 2))
+
+	<span class="c">// N accepts each integer type.</span>
+	wait := r.N(5 * time.Second) <span class="c">// time.Duration</span>
+	fmt.Println(wait)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+3.846866346s</code></pre></div><p class="runnote">The seed is fixed, thus each run prints the same value.</p></details><div class="explain"><h5>What the code does</h5><p>The code selects a random wait time that is less than 5 seconds. Programs do this, for example, before they try a failed request again.</p><p>The old method <code>Int64N</code> accepts only the type <code>int64</code>. Thus you change the duration to <code>int64</code> and then change the result back. The new method <code>N</code> accepts each whole-number type and returns the same type.</p><h5>Data structures</h5><ul><li><code>r</code> is a random number generator. <code>rand.NewPCG(1, 2)</code> is its source. The numbers 1 and 2 are the seed. The same seed always gives the same sequence of numbers, which is useful in tests.</li><li><code>time.Duration</code> is a length of time. Go stores it as a whole number of nanoseconds. <code>5 * time.Second</code> is five seconds.</li><li><code>:=</code> declares a variable and gives it a value in one step.</li></ul></div><p class="note caution"><b>CAUTION</b> An interface method cannot have type parameters. A generic method cannot implement an interface method.</p></article><article id="inference"><div class="thead"><span class="n">1.4</span><h3>More type inference for generic functions</h3><span class="tag v">Go 1.27</span></div><p>The compiler now infers type arguments in each context where you assign a generic function to a matching function type.</p><p>This includes conversions and composite literals.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> first[T any](s []T) T { <span class="k">return</span> s[<span class="n">0</span>] }
+<span class="k">func</span> last[T any](s []T) T  { <span class="k">return</span> s[len(s)-<span class="n">1</span>] }
+
+<span class="c">// The type arguments were necessary.</span>
+ops := []<span class="k">func</span>([]int) int{first[int], last[int]}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> first[T any](s []T) T { <span class="k">return</span> s[<span class="n">0</span>] }
+<span class="k">func</span> last[T any](s []T) T  { <span class="k">return</span> s[len(s)-<span class="n">1</span>] }
+
+<span class="c">// The element type gives T = int.</span>
+ops := []<span class="k">func</span>([]int) int{first, last}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> <span class="s">"fmt"</span>
+
+<span class="k">func</span> first[T any](s []T) T { <span class="k">return</span> s[0] }
+<span class="k">func</span> last[T any](s []T) T  { <span class="k">return</span> s[len(s)-1] }
+
+<span class="k">func</span> main() {
+	<span class="c">// The element type gives T = int.</span>
+	ops := []<span class="k">func</span>([]int) int{first, last}
+
+	nums := []int{10, 20, 30}
+	<span class="k">for</span> _, op := <span class="k">range</span> ops {
+		fmt.Println(op(nums))
+	}
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+10
+30</code></pre></div></details><div class="explain"><h5>What the code does</h5><p><code>first</code> returns the first item of a list. <code>last</code> returns the last item. They are generic: they work for a list of any type.</p><p>The last line puts the two functions into a list with the name <code>ops</code>. In the old code you had to write <code>first[int]</code> to say that the type is <code>int</code>. In the new code the compiler finds the type from the type of the list.</p><h5>Data structures</h5><ul><li><code>[]func([]int) int</code> is a slice of functions. Each function in it accepts a slice of whole numbers and returns one whole number. A function is a value in Go: you can keep it in a variable or in a list.</li><li><code>s[0]</code> is the first item of the slice <code>s</code>. Positions start at 0. <code>len(s)</code> is the number of items, thus <code>s[len(s)-1]</code> is the last item.</li></ul></div></article><article id="struct-keys"><div class="thead"><span class="n">1.5</span><h3>Struct literal keys for embedded fields</h3><span class="tag v">Go 1.27</span></div><p>A key in a struct literal can now be a field selector of the struct type. Before, only a top-level field name was permitted.</p><p>You can set a promoted field directly. You do not write the embedded type again.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Base <span class="k">struct</span> {
+	ID      int
+	Created time.Time
+}
+
+<span class="k">type</span> User <span class="k">struct</span> {
+	Base
+	Name string
+}
+
+u := User{
+	Base: Base{ID: <span class="n">7</span>},
+	Name: <span class="s">"Mittens"</span>,
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">type</span> Base <span class="k">struct</span> {
+	ID      int
+	Created time.Time
+}
+
+<span class="k">type</span> User <span class="k">struct</span> {
+	Base
+	Name string
+}
+
+u := User{
+	ID:   <span class="n">7</span>, <span class="c">// promoted from Base</span>
+	Name: <span class="s">"Mittens"</span>,
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">type</span> Base <span class="k">struct</span> {
+	ID      int
+	Created time.Time
+}
+
+<span class="k">type</span> User <span class="k">struct</span> {
+	Base
+	Name string
+}
+
+<span class="k">func</span> main() {
+	u := User{
+		ID:   7, <span class="c">// promoted from Base</span>
+		Name: <span class="s">"Mittens"</span>,
+	}
+	fmt.Println(u.ID, u.Name)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+7 Mittens</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>The code makes a <code>User</code> with the ID 7 and the name Mittens.</p><p>In the old code you write the inner struct <code>Base</code> in full to set <code>ID</code>. In the new code you set <code>ID</code> directly.</p><h5>Data structures</h5><ul><li><code>Base</code> is a struct with two fields: <code>ID</code> (a whole number) and <code>Created</code> (a moment in time, of type <code>time.Time</code>).</li><li><code>User</code> is a struct that embeds <code>Base</code>. To embed, you write the type with no field name. Then <code>User</code> gets the fields of <code>Base</code>. You can write <code>u.ID</code>. Such a field is called a promoted field.</li><li>The code does not set <code>Created</code>. It keeps its zero value.</li><li><code>User{...}</code> is a composite literal: it makes a struct value and fills the fields that you name.</li></ul></div><p class="note note"><b>NOTE</b> The new <code>embedlit</code> modernizer of <code>go fix</code> is related to this change. Refer to section 5.1.</p></article></section><section class="part" id="library"><div class="parthead"><span class="n">2</span><div><h2>Standard library</h2><p>A new JSON engine, a leak profiler, faster HTTP/1 clients, and three new APIs.</p></div></div><article id="json-v2"><div class="thead"><span class="n">2.1</span><h3>encoding/json/v2 and jsontext</h3><span class="tag v">Go 1.27</span><span class="tag ">6 years of work</span></div><p>Go 1.27 has two new packages. <code>encoding/json/v2</code> changes Go values to JSON and back. <code>encoding/json/jsontext</code> reads and writes JSON tokens without reflection.</p><p>The old package <code>encoding/json</code> now uses the v2 engine. Your code gets faster unmarshal operations and you do not change it. The blog post gives a maximum of 10 times.</p><figure><div class="svgw"><svg viewBox="0 0 760 258" role="img" aria-label="encoding/json version 1 now calls encoding/json/v2, and v2 calls jsontext." style="min-width:620px"><defs><marker id="m2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><rect x="40" y="14" width="300" height="46" rx="5" class="bx"/><text x="190.0" y="34.0" text-anchor="middle" class="tm">import "encoding/json"</text><text x="190.0" y="50.0" text-anchor="middle" class="ts">existing code, v1 API</text><rect x="420" y="14" width="300" height="46" rx="5" class="bx"/><text x="570.0" y="34.0" text-anchor="middle" class="tm">import "encoding/json/v2"</text><text x="570.0" y="50.0" text-anchor="middle" class="ts">new code, v2 API</text><rect x="40" y="104" width="680" height="50" rx="5" class="ac"/><text x="380.0" y="126.0" text-anchor="middle" class="th">encoding/json/v2: meaning</text><text x="380.0" y="142.0" text-anchor="middle" class="ts">Go values to JSON values. Options. Reflection.</text><rect x="40" y="196" width="680" height="50" rx="5" class="bx"/><text x="380.0" y="218.0" text-anchor="middle" class="th">encoding/json/jsontext: syntax</text><text x="380.0" y="234.0" text-anchor="middle" class="ts">Tokens and values. Stream. No reflection.</text><line x1="190" y1="60" x2="190" y2="104" class="ln" marker-end="url(#m2a)"/><text x="200" y="86" class="ts" text-anchor="start">v1 options keep the old behavior</text><line x1="570" y1="60" x2="570" y2="104" class="lnb" marker-end="url(#m2b)"/><text x="580" y="86" class="ts" text-anchor="start">strict defaults</text><line x1="380" y1="154" x2="380" y2="196" class="ln" marker-end="url(#m2a)"/><text x="390" y="180" class="ts" text-anchor="start">reads and writes tokens</text></svg></div><figcaption>One engine, two APIs. Version 1 is a thin layer on version 2. The two versions can be in the same program.</figcaption></figure><h4>Stricter defaults</h4><p>Version 1 accepts input that can hide errors or attacks. Version 2 rejects this input.</p><div class="tw"><table><thead><tr><th>Input or value</th><th>Version 1</th><th>Version 2 default</th><th>Option for the v1 behavior</th></tr></thead><tbody><tr><td>Duplicate name: <code>{"role":"viewer","role":"admin"}</code></td><td>Accepts. The last value wins.</td><td>Error</td><td><code>jsontext.AllowDuplicateNames(true)</code></td></tr><tr><td>Different case: <code>{"ROLE":"admin"}</code> for the tag <code>json:"role"</code></td><td>Sets the field</td><td>Ignores the member</td><td><code>json.MatchCaseInsensitiveNames(true)</code></td></tr><tr><td>Invalid UTF-8 in a string</td><td>Replaces with U+FFFD</td><td>Error</td><td><code>jsontext.AllowInvalidUTF8(true)</code></td></tr><tr><td>Nil slice or nil map on marshal</td><td><code>null</code></td><td><code>[]</code> or <code>{}</code></td><td><code>json.FormatNilSliceAsNull(true)</code>, <code>json.FormatNilMapAsNull(true)</code></td></tr></tbody></table></div><div class="ba"><div class="code before"><div class="ch before"><span>Version 1 behavior</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"encoding/json"</span>
+	<span class="s">"fmt"</span>
+)
+
+<span class="k">type</span> Account <span class="k">struct</span> {
+	ID   string   <span class="s">`json:"id"`</span>
+	Role string   <span class="s">`json:"role"`</span>
+	Tags []string <span class="s">`json:"tags"`</span>
+}
+
+<span class="k">func</span> main() {
+	in := []byte(<span class="s">`{"id":"a1","role":"viewer","ROLE":"admin"}`</span>)
+
+	<span class="k">var</span> a Account
+	err := json.Unmarshal(in, &amp;a)
+	fmt.Println(a.Role, err) <span class="c">// admin &lt;nil&gt;</span>
+
+	out, _ := json.Marshal(Account{ID: <span class="s">"a1"</span>})
+	fmt.Println(string(out))
+	<span class="c">// {"id":"a1","role":"","tags":null}</span>
+}</code></pre></div><div class="code after"><div class="ch after"><span>Version 2 behavior</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"encoding/json/v2"</span>
+	<span class="s">"fmt"</span>
+)
+
+<span class="k">type</span> Account <span class="k">struct</span> {
+	ID   string   <span class="s">`json:"id"`</span>
+	Role string   <span class="s">`json:"role"`</span>
+	Tags []string <span class="s">`json:"tags"`</span>
+}
+
+<span class="k">func</span> main() {
+	in := []byte(<span class="s">`{"id":"a1","role":"viewer","ROLE":"admin"}`</span>)
+
+	<span class="k">var</span> a Account
+	err := json.Unmarshal(in, &amp;a)
+	fmt.Println(a.Role, err) <span class="c">// viewer &lt;nil&gt;: "ROLE" does not match</span>
+
+	out, _ := json.Marshal(Account{ID: <span class="s">"a1"</span>})
+	fmt.Println(string(out))
+	<span class="c">// {"id":"a1","role":"","tags":[]}</span>
+}</code></pre></div></div><details class="run"><summary>Output of the program</summary><div class="code out"><div class="ch"><span>Version 1 · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+admin &lt;nil&gt;
+{"id":"a1","role":"","tags":null}</code></pre></div><div class="code out"><div class="ch"><span>Version 2 · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+viewer &lt;nil&gt;
+{"id":"a1","role":"","tags":[]}</code></pre></div><p class="runnote">The examples above are complete programs. Copy one into <code>main.go</code> and do <code>go run .</code>.</p></details><div class="explain"><h5>What the code does</h5><p>JSON is a text format for data. Programs use it to send data to other programs. Each program does two steps. First it reads JSON text into an <code>Account</code> (this is "unmarshal"). Then it writes an <code>Account</code> as JSON text (this is "marshal").</p><p>The input has two members with almost the same name: <code>"role":"viewer"</code> and <code>"ROLE":"admin"</code>. Version 1 ignores the difference between capital and small letters. The second member replaces the first, and the role becomes admin. An attacker can use this to hide a value. Version 2 accepts only the exact name, and the role stays viewer.</p><p>In the output, <code>Tags</code> has no items. Version 1 writes <code>null</code>. Version 2 writes an empty list, <code>[]</code>.</p><h5>Data structures</h5><ul><li><code>Account</code> is a struct with three fields. The struct tags give the JSON name of each field.</li><li><code>[]byte</code> is a slice of bytes: raw data. The JSON functions read bytes and write bytes. <code>string(out)</code> changes bytes to text for the print.</li><li><code>&amp;a</code> is the address of the variable <code>a</code>. <code>Unmarshal</code> needs the address to put the data into <code>a</code>.</li><li><code>Tags []string</code> is a slice of text values. It is <code>nil</code> when nothing was put into it.</li><li><code>err</code> is an error value. <code>nil</code> means that there was no error. <code>out, _ :=</code> puts the first result in <code>out</code> and discards the second.</li></ul></div><h4>Options at the call site</h4><p>Each v2 function accepts options. The caller controls the behavior for one call. In version 1 you made a <code>Decoder</code> or a wrapper type.</p><div class="ba"><div class="code before"><div class="ch before"><span>Version 1</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Reject unknown fields: a Decoder was necessary.</span>
+dec := json.NewDecoder(r)
+dec.DisallowUnknownFields()
+err := dec.Decode(&amp;cfg)
+
+<span class="c">// Unix time for time.Time: a wrapper type</span>
+<span class="c">// with a MarshalJSON method was necessary.</span>
+<span class="k">type</span> unixTime time.Time
+
+<span class="k">func</span> (t unixTime) MarshalJSON() ([]byte, error) {
+	<span class="k">return</span> strconv.AppendInt(nil, time.Time(t).Unix(), <span class="n">10</span>), nil
+}</code></pre></div><div class="code after"><div class="ch after"><span>Version 2</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Reject unknown members with one option.</span>
+err := json.UnmarshalRead(r, &amp;cfg,
+	json.RejectUnknownMembers(true))
+
+<span class="c">// The caller gives a marshal function for time.Time.</span>
+<span class="c">// The struct types do not change.</span>
+unix := json.MarshalFunc(<span class="k">func</span>(t time.Time) ([]byte, error) {
+	<span class="k">return</span> strconv.AppendInt(nil, t.Unix(), <span class="n">10</span>), nil
+})
+out, err := json.Marshal(event, json.WithMarshalers(unix))</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"encoding/json/v2"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"strconv"</span>
+	<span class="s">"strings"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">type</span> Config <span class="k">struct</span> {
+	Name string <span class="s">`json:"name"`</span>
+}
+
+<span class="k">type</span> Event <span class="k">struct</span> {
+	Title string    <span class="s">`json:"title"`</span>
+	At    time.Time <span class="s">`json:"at"`</span>
+}
+
+<span class="k">func</span> main() {
+	<span class="c">// The input has a member that Config does not have.</span>
+	r := strings.NewReader(<span class="s">`{"name":"db","nmae":"typing error"}`</span>)
+
+	<span class="c">// Reject unknown members with one option.</span>
+	<span class="k">var</span> cfg Config
+	err := json.UnmarshalRead(r, &amp;cfg, json.RejectUnknownMembers(true))
+	fmt.Println(<span class="s">"error:"</span>, err)
+
+	<span class="c">// The caller gives a marshal function for time.Time.</span>
+	<span class="c">// The struct types do not change.</span>
+	unix := json.MarshalFunc(<span class="k">func</span>(t time.Time) ([]byte, error) {
+		<span class="k">return</span> strconv.AppendInt(nil, t.Unix(), 10), nil
+	})
+	event := Event{Title: <span class="s">"deploy"</span>, At: time.Unix(1700000000, 0)}
+	out, err := json.Marshal(event, json.WithMarshalers(unix))
+	fmt.Println(string(out), err)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+error: json: cannot unmarshal JSON string into Go main.Config: unknown object member name "nmae"
+{"title":"deploy","at":1700000000} &lt;nil&gt;</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>The code shows two tasks.</p><p>Task 1: read a configuration and stop with an error if the input has a name that the struct does not have. This finds typing errors in configuration files.</p><p>Task 2: write a time as Unix seconds (the number of seconds from 1 January 1970) and not as date text.</p><p>In version 1 you make a <code>Decoder</code> object and change its setting for task 1. For task 2 you make a new type with its own method. In version 2 you give options to the function call. Your types do not change.</p><h5>Data structures</h5><ul><li><code>r</code> is a reader: a source of bytes, for example a file or a network connection.</li><li><code>cfg</code> is the struct that gets the data. <code>&amp;cfg</code> is its address.</li><li><code>dec</code> is a <code>Decoder</code>. It reads JSON from the reader.</li><li><code>unixTime</code> is a new type made from <code>time.Time</code>. Its method <code>MarshalJSON</code> tells the JSON package how to write the value.</li><li><code>json.MarshalFunc(...)</code> makes an option from a function that you write. <code>json.WithMarshalers(unix)</code> gives that option to one call of <code>Marshal</code>.</li><li><code>strconv.AppendInt(nil, n, 10)</code> writes the number <code>n</code> as decimal text into a new slice of bytes.</li></ul></div><h4>Stream of tokens with jsontext</h4><div class="code "><div class="ch "><span>Go 1.27: read tokens, no reflection</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"encoding/json/jsontext"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"io"</span>
+	<span class="s">"log"</span>
+	<span class="s">"strings"</span>
+)
+
+<span class="k">func</span> main() {
+	dec := jsontext.NewDecoder(strings.NewReader(<span class="s">`{"id":"a1","tags":["x","y"]}`</span>))
+	<span class="k">for</span> {
+		tok, err := dec.ReadToken()
+		<span class="k">if</span> err == io.EOF {
+			<span class="k">break</span>
+		}
+		<span class="k">if</span> err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf(<span class="s">"%c  %v\n"</span>, tok.Kind(), tok)
+	}
+}</code></pre></div><details class="run"><summary>Output of the program</summary><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+{  {
+"  id
+"  a1
+"  tags
+[  [
+"  x
+"  y
+]  ]
+}  }</code></pre></div><p class="runnote">The example above is a complete program. The first column is the kind of the token. The second column is the token.</p></details><div class="explain"><h5>What the code does</h5><p>The program reads JSON text one token at a time. A token is the smallest part of the text: a brace, a bracket, a name, a text value or a number.</p><p>The loop reads a token and prints its kind and its value. It stops at the end of the input. For this input it prints nine lines.</p><p>Use this method for very large files. The program does not load the full document into memory.</p><h5>Data structures</h5><ul><li><code>dec</code> is a <code>jsontext.Decoder</code>. It keeps the position in the input.</li><li><code>strings.NewReader(...)</code> makes a reader from text. In a real program the reader is a file or a network connection.</li><li><code>tok</code> is one token. <code>tok.Kind()</code> is one character that gives the kind, for example <code>{</code> for the start of an object and <code>"</code> for text.</li><li><code>for { ... }</code> with no condition is a loop that continues until <code>break</code>.</li><li><code>io.EOF</code> is a special error value. It means "end of input". <code>log.Fatal</code> prints an error and stops the program.</li></ul></div><h4>Gradual migration</h4><ol><li>Upgrade to Go 1.27. Do the tests. The v1 API now uses the v2 engine.</li><li>If an error message changed in a test, correct the test. The behavior is the same, but the text of errors can be different.</li><li>Move one package at a time to <code>encoding/json/v2</code>.</li><li>Where old data needs the old rules, add the v1 options from the table above to that call.</li></ol><p class="note note"><b>NOTE</b> If an incompatibility stops you, build with <code>GOEXPERIMENT=nojsonv2</code>. This setting is temporary.</p><p class="note caution"><b>CAUTION</b> In the last version of the experiment the tag option <code>inline</code> became <code>embed</code>. The tag options <code>format</code> and <code>unknown</code> are not in the release.</p></article><article id="leak"><div class="thead"><span class="n">2.2</span><h3>Goroutine leak profile</h3><span class="tag x">Preview in Go 1.26</span><span class="tag v">Default in Go 1.27</span></div><p>A leaked goroutine is blocked and nothing can unblock it. It keeps its memory until the program stops.</p><p>The new profile <code>goroutineleak</code> finds these goroutines. It uses the reachability data of the garbage collector. It has no cost when you do not use it.</p><figure><div class="svgw"><svg viewBox="0 0 760 230" role="img" aria-label="Three goroutines are blocked on a channel that no runnable goroutine can reach." style="min-width:620px"><defs><marker id="m3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m3c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><rect x="30" y="80" width="170" height="60" rx="5" class="bx"/><text x="115.0" y="107.0" text-anchor="middle" class="th">fetchAll()</text><text x="115.0" y="123.0" text-anchor="middle" class="ts">returned with an error</text><rect x="300" y="85" width="140" height="50" rx="5" class="wn"/><text x="370.0" y="107.0" text-anchor="middle" class="th">ch</text><text x="370.0" y="123.0" text-anchor="middle" class="ts">unbuffered channel</text><rect x="560" y="30" width="170" height="40" rx="5" class="bx"/><text x="645.0" y="47.0" text-anchor="middle" class="th">goroutine 1</text><text x="645.0" y="63.0" text-anchor="middle" class="ts">blocked: ch &lt;- err</text><line x1="560" y1="50" x2="442" y2="110" class="lnc" marker-end="url(#m3c)"/><rect x="560" y="95" width="170" height="40" rx="5" class="bx"/><text x="645.0" y="112.0" text-anchor="middle" class="th">goroutine 2</text><text x="645.0" y="128.0" text-anchor="middle" class="ts">blocked: ch &lt;- err</text><line x1="560" y1="115" x2="442" y2="110" class="lnc" marker-end="url(#m3c)"/><rect x="560" y="160" width="170" height="40" rx="5" class="bx"/><text x="645.0" y="177.0" text-anchor="middle" class="th">goroutine 3</text><text x="645.0" y="193.0" text-anchor="middle" class="ts">blocked: ch &lt;- err</text><line x1="560" y1="180" x2="442" y2="110" class="lnc" marker-end="url(#m3c)"/><line x1="200" y1="110" x2="300" y2="110" class="ln" stroke-dasharray="5 4"/><path d="M243 103l14 14M257 103l-14 14" class="lnc"/><text x="250" y="96" class="ts" text-anchor="middle">no reference</text><text x="500" y="150" class="ts" text-anchor="middle">send waits</text><text x="30" y="216" class="t" text-anchor="start">No runnable goroutine can get to ch. The collector reports goroutines 1 to 3 as leaks.</text></svg></div><figcaption>The leak profile uses the reachability data of the garbage collector. A blocked goroutine is a leak if nothing can unblock it.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Before</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// The "goroutine" profile shows ALL goroutines.</span>
+<span class="c">// You find the leaks with your eyes.</span>
+pprof.Lookup(<span class="s">"goroutine"</span>).WriteTo(os.Stdout, <span class="n">1</span>)
+
+<span class="c">// In tests, an external package compares</span>
+<span class="c">// the goroutines before and after the test.</span>
+<span class="c">//</span>
+<span class="c">//   import "go.uber.org/goleak"</span>
+<span class="c">//   defer goleak.VerifyNone(t)</span></code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"errors"</span>
+	<span class="s">"os"</span>
+	<span class="s">"runtime/pprof"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">func</span> fetch(id int) error {
+	<span class="k">if</span> id == <span class="n">0</span> {
+		<span class="k">return</span> errors.New(<span class="s">"id 0 failed"</span>)
+	}
+	time.Sleep(<span class="n">10</span> * time.Millisecond)
+	<span class="k">return</span> nil
+}
+
+<span class="k">func</span> fetchAll(ids []int) error {
+	ch := make(<span class="k">chan</span> error) <span class="c">// unbuffered</span>
+	<span class="k">for</span> _, id := <span class="k">range</span> ids {
+		<span class="k">go</span> <span class="k">func</span>() { ch &lt;- fetch(id) }()
+	}
+	<span class="k">for</span> <span class="k">range</span> ids {
+		<span class="k">if</span> err := &lt;-ch; err != nil {
+			<span class="k">return</span> err <span class="c">// the other senders block</span>
+		}
+	}
+	<span class="k">return</span> nil
+}
+
+<span class="k">func</span> main() {
+	_ = fetchAll([]int{<span class="n">0</span>, <span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span>})
+	time.Sleep(<span class="n">100</span> * time.Millisecond)
+
+	<span class="c">// Shows only the goroutines that are leaks.</span>
+	pprof.Lookup(<span class="s">"goroutineleak"</span>).WriteTo(os.Stdout, <span class="n">1</span>)
+}</code></pre></div></div><details class="run"><summary>Output of the program</summary><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+goroutineleak profile: total 3
+3 @ 0x47d88a 0x41421c 0x413e17 0x4de9d7 0x4835c1
+#	0x4de9d6	main.fetchAll.func1+0x76	/home/you/go17/main.go:21</code></pre></div><p class="runnote">The example above is a complete program. The numbers that start with <code>0x</code> and the file path are different on your computer.</p></details><div class="explain"><h5>What the code does</h5><p><code>fetchAll</code> starts one goroutine for each ID. A goroutine is a function that runs at the same time as the other code. Each goroutine calls <code>fetch</code> and sends the result into the channel <code>ch</code>.</p><p><code>fetchAll</code> reads the results. ID 0 fails, and <code>fetchAll</code> returns at that first error. The three other goroutines still want to send their results. Nothing reads the channel, thus they wait until the program stops. This is a leak.</p><p><code>main</code> waits 100 milliseconds and then prints the leak profile. The profile shows a total of 3 goroutines and the line where they wait.</p><p>The old code prints a profile of all goroutines. You must find the leaks in that list.</p><h5>Data structures</h5><ul><li><code>ch := make(chan error)</code> makes a channel: a pipe that goroutines use to send values to each other. This channel has no buffer. A send operation is complete only when a different goroutine receives the value.</li><li><code>ch &lt;- v</code> sends <code>v</code> into the channel. <code>&lt;-ch</code> receives a value from it.</li><li><code>go func() { ... }()</code> starts a goroutine.</li><li><code>[]int{0, 1, 2, 3}</code> is a slice of four whole numbers: the IDs.</li><li><code>errors.New("...")</code> makes an error value with a message. <code>time.Sleep</code> stops the goroutine for the given time.</li><li><code>pprof.Lookup(name)</code> gets a profile: a report from the Go runtime about the program. <code>WriteTo(os.Stdout, 1)</code> prints it on the terminal.</li></ul></div><p>To correct this leak, give the channel a buffer: <code>ch := make(chan error, len(ids))</code>. Then each sender completes.</p><p class="note note"><b>NOTE</b> In Go 1.26, build with <code>GOEXPERIMENT=goroutineleakprofile</code>. Without this setting, <code>pprof.Lookup("goroutineleak")</code> gives nil and the example panics.</p><div class="code "><div class="ch"><span>shell</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># In a service that imports net/http/pprof:</span>
+go tool pprof http://localhost:6060/debug/pprof/goroutineleak</code></pre></div><div class="explain"><h5>What the code does</h5><p>A service that imports <code>net/http/pprof</code> gives its profiles at a web address. This command downloads the leak profile from a service on your computer (port 6060) and opens it in the <code>pprof</code> tool. You do not change the service.</p></div><p class="note note"><b>NOTE</b> The profile can miss a leak if a global variable or a local variable of a runnable goroutine can get to the blocked primitive.</p></article><article id="http-drain"><div class="thead"><span class="n">2.3</span><h3>HTTP/1 connections stay open after Close</h3><span class="tag v">Go 1.27</span><span class="tag z">No code change</span></div><p>When you close an HTTP/1 response body with unread bytes, the transport now reads the small remainder in the background.</p><p>The connection goes back to the pool. The blog post gives a maximum of 5 times for sequential HTTP/1 requests.</p><figure><div class="svgw"><svg viewBox="0 0 760 222" role="img" aria-label="Before Go 1.27 an unread HTTP/1 response body closed the connection. Go 1.27 drains small bodies and reuses the connection." style="min-width:620px"><defs><marker id="m4a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m4c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><text x="20" y="24" class="th" text-anchor="start">Go 1.26 and earlier</text><text x="20" y="144" class="th" text-anchor="start">Go 1.27</text><rect x="20" y="40" width="160" height="46" rx="5" class="bx"/><text x="100.0" y="67.0" text-anchor="middle" class="th">Read part of body</text><rect x="205" y="40" width="160" height="46" rx="5" class="bx"/><text x="285.0" y="60.0" text-anchor="middle" class="th">Body.Close()</text><text x="285.0" y="76.0" text-anchor="middle" class="ts">unread bytes stay</text><line x1="180" y1="63" x2="203" y2="63" class="ln" marker-end="url(#m4a)"/><rect x="390" y="40" width="160" height="46" rx="5" class="wn"/><text x="470.0" y="60.0" text-anchor="middle" class="th">Connection closes</text><text x="470.0" y="76.0" text-anchor="middle" class="ts">not safe to use again</text><line x1="365" y1="63" x2="388" y2="63" class="lnc" marker-end="url(#m4c)"/><rect x="575" y="40" width="160" height="46" rx="5" class="wn"/><text x="655.0" y="60.0" text-anchor="middle" class="th">New connection</text><text x="655.0" y="76.0" text-anchor="middle" class="ts">TCP + TLS handshake</text><line x1="550" y1="63" x2="573" y2="63" class="lnc" marker-end="url(#m4c)"/><rect x="20" y="160" width="160" height="46" rx="5" class="bx"/><text x="100.0" y="187.0" text-anchor="middle" class="th">Read part of body</text><rect x="205" y="160" width="160" height="46" rx="5" class="bx"/><text x="285.0" y="180.0" text-anchor="middle" class="th">Body.Close()</text><text x="285.0" y="196.0" text-anchor="middle" class="ts">unread bytes stay</text><line x1="180" y1="183" x2="203" y2="183" class="ln" marker-end="url(#m4a)"/><rect x="390" y="160" width="160" height="46" rx="5" class="ac"/><text x="470.0" y="180.0" text-anchor="middle" class="th">Transport drains</text><text x="470.0" y="196.0" text-anchor="middle" class="ts">the small remainder</text><line x1="365" y1="183" x2="388" y2="183" class="lnb" marker-end="url(#m4b)"/><rect x="575" y="160" width="160" height="46" rx="5" class="ac"/><text x="655.0" y="180.0" text-anchor="middle" class="th">Back to the pool</text><text x="655.0" y="196.0" text-anchor="middle" class="ts">next request uses it</text><line x1="550" y1="183" x2="573" y2="183" class="lnb" marker-end="url(#m4b)"/></svg></div><figcaption>The transport keeps the connection when the unread part is small. The limit is conservative. Large bodies still close the connection.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code>resp, err := client.Get(url)
+<span class="k">if</span> err != nil {
+	<span class="k">return</span> err
+}
+<span class="k">defer</span> resp.Body.Close()
+
+<span class="k">if</span> resp.StatusCode != http.StatusOK {
+	<span class="c">// Read the remainder. If not,</span>
+	<span class="c">// the connection is not used again.</span>
+	io.Copy(io.Discard, resp.Body)
+	<span class="k">return</span> fmt.Errorf(<span class="s">"status %s"</span>, resp.Status)
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code>resp, err := client.Get(url)
+<span class="k">if</span> err != nil {
+	<span class="k">return</span> err
+}
+<span class="k">defer</span> resp.Body.Close()
+
+<span class="k">if</span> resp.StatusCode != http.StatusOK {
+	<span class="c">// Close is sufficient for a small remainder.</span>
+	<span class="k">return</span> fmt.Errorf(<span class="s">"status %s"</span>, resp.Status)
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"net/http"</span>
+	<span class="s">"net/http/httptest"</span>
+)
+
+<span class="k">func</span> get(client *http.Client, url string) error {
+	resp, err := client.Get(url)
+	<span class="k">if</span> err != nil {
+		<span class="k">return</span> err
+	}
+	<span class="k">defer</span> resp.Body.Close()
+	<span class="k">if</span> resp.StatusCode != http.StatusOK {
+		<span class="c">// Close is sufficient for a small remainder.</span>
+		<span class="k">return</span> fmt.Errorf(<span class="s">"status %s"</span>, resp.Status)
+	}
+	<span class="k">return</span> nil
+}
+
+<span class="k">func</span> main() {
+	<span class="c">// A test server on this computer. It always answers 404.</span>
+	srv := httptest.NewServer(http.NotFoundHandler())
+	<span class="k">defer</span> srv.Close()
+
+	fmt.Println(get(srv.Client(), srv.URL))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+status 404 Not Found</code></pre></div><p class="runnote">The program runs on older releases also. Only Go 1.27 uses the connection again.</p></details><div class="explain"><h5>What the code does</h5><p>The code sends an HTTP GET request to a web address and examines the answer. If the status is not 200 (OK), the function returns an error.</p><p>In the old code you read the remainder of the answer and discard it before you return. If you do not, the client cannot use the network connection again and must open a new one. In the new code <code>Close</code> does this work when the remainder is small.</p><h5>Data structures</h5><ul><li><code>client</code> is an <code>http.Client</code>. It sends requests and keeps a pool of open connections.</li><li><code>resp</code> is the response. <code>resp.StatusCode</code> is a number such as 200 or 404. <code>resp.Status</code> is the same data as text.</li><li><code>resp.Body</code> is a stream: you read it in parts, and you must close it.</li><li><code>defer</code> tells Go to do the call when the function returns. Thus the body is always closed.</li><li><code>io.Copy(io.Discard, resp.Body)</code> reads all of the body and discards it.</li><li><code>fmt.Errorf</code> makes an error with a message. <code>%s</code> is the position where the status text goes.</li></ul></div><p class="note note"><b>NOTE</b> To stop connection reuse, set <code>Transport.DisableKeepAlives</code> to <code>true</code>.</p></article><article id="uuid"><div class="thead"><span class="n">2.4</span><h3>Package uuid</h3><span class="tag v">Go 1.27</span></div><p>The standard library now makes and parses UUIDs. An external module is not necessary for the common cases.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before: external module</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">import</span> <span class="s">"github.com/google/uuid"</span>
+
+id := uuid.New()            <span class="c">// version 4</span>
+ordered, err := uuid.NewV7() <span class="c">// sorts by time</span>
+parsed, err := uuid.Parse(s)
+fmt.Println(id.String())</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27: standard library</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">import</span> <span class="s">"uuid"</span>
+
+id := uuid.New()        <span class="c">// good default</span>
+random := uuid.NewV4()  <span class="c">// fully random</span>
+ordered := uuid.NewV7() <span class="c">// sorts by time: good for database keys</span>
+parsed, err := uuid.Parse(<span class="s">"f81d4fae-7dec-11d0-a765-00a0c91e6bf6"</span>)
+fmt.Println(id.String(), ordered.Compare(random))</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+	<span class="s">"uuid"</span>
+)
+
+<span class="k">func</span> main() {
+	id := uuid.New()        <span class="c">// good default</span>
+	random := uuid.NewV4()  <span class="c">// fully random</span>
+	ordered := uuid.NewV7() <span class="c">// sorts by time: good for database keys</span>
+
+	parsed, err := uuid.Parse(<span class="s">"f81d4fae-7dec-11d0-a765-00a0c91e6bf6"</span>)
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(id.String())
+	fmt.Println(ordered.Compare(random))
+	fmt.Println(parsed)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+21556c7d-e38a-4c6b-8f25-82dcde3a6669
+-1
+f81d4fae-7dec-11d0-a765-00a0c91e6bf6</code></pre></div><p class="runnote">The first two lines are different in each run, because the IDs are random.</p></details><div class="explain"><h5>What the code does</h5><p>A UUID is an identifier of 128 bits. It has sufficient random data that two UUIDs are, in practice, never the same. The text form has 36 characters.</p><p>The code makes UUIDs of different versions, reads one from text, prints one, and compares two.</p><p>The old code downloads an external module. The new code uses the standard library. One difference: <code>uuid.NewV7()</code> in the standard library returns no error.</p><h5>Data structures</h5><ul><li><code>uuid.UUID</code> is an array of 16 bytes, <code>[16]byte</code>. An array has a fixed length. A slice does not.</li><li>Version 4 is fully random. Version 7 starts with the current time, thus a new ID sorts after an older ID. A database index stays in sequence.</li><li><code>parsed, err := uuid.Parse(...)</code> returns two results. <code>err</code> is not <code>nil</code> when the text is not a correct UUID.</li><li><code>Compare</code> returns -1, 0 or +1: less than, equal, or more than.</li></ul></div><p><code>uuid.UUID</code> is a <code>[16]byte</code>. You can compare two values with <code>==</code>. The type implements <code>encoding.TextMarshaler</code>, thus JSON operations work.</p></article><article id="astype"><div class="thead"><span class="n">2.5</span><h3>errors.AsType</h3><span class="tag v">Go 1.26</span></div><p><code>errors.AsType</code> is a generic version of <code>errors.As</code>. It is type-safe and faster. You do not declare a target variable first.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">var</span> pathErr *fs.PathError
+<span class="k">if</span> errors.As(err, &amp;pathErr) {
+	fmt.Println(<span class="s">"path:"</span>, pathErr.Path)
+}
+<span class="c">// A wrong target type causes a panic at run time.</span></code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">if</span> pathErr, ok := errors.AsType[*fs.PathError](err); ok {
+	fmt.Println(<span class="s">"path:"</span>, pathErr.Path)
+}
+<span class="c">// A wrong type is a compile error.</span></code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"errors"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"io/fs"</span>
+	<span class="s">"os"</span>
+)
+
+<span class="k">func</span> main() {
+	<span class="c">// This file does not exist, thus Open returns an error.</span>
+	_, err := os.Open(<span class="s">"/no/such/file.txt"</span>)
+
+	<span class="k">if</span> pathErr, ok := errors.AsType[*fs.PathError](err); ok {
+		fmt.Println(<span class="s">"path:"</span>, pathErr.Path)
+	}
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+path: /no/such/file.txt</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>An error in Go can contain a different error. The result is a chain of errors. This code asks: is there an error of the type <code>*fs.PathError</code> in the chain? If yes, it prints the file path from that error.</p><p>In the old code you declare a variable first and give its address to <code>errors.As</code>. In the new code you write the type in square brackets. The function returns the error and a true or false value.</p><h5>Data structures</h5><ul><li><code>err</code> is an error value from an earlier call, for example from <code>os.Open</code>.</li><li><code>*fs.PathError</code> is a pointer to a struct with the fields <code>Op</code>, <code>Path</code> and <code>Err</code>. File functions return it.</li><li><code>ok</code> is a <code>bool</code>: true or false. It is true when the function found the type.</li><li><code>if x, ok := f(); ok { ... }</code> declares variables and tests <code>ok</code> in one line. The variables are available only in the block.</li></ul></div></article><article id="testserver"><div class="thead"><span class="n">2.6</span><h3>httptest.NewTestServer with virtual time</h3><span class="tag v">Go 1.27</span></div><p><code>httptest.NewTestServer</code> makes a server on an in-memory network. It works in a <code>testing/synctest</code> bubble.</p><p>In a bubble the clock is virtual. A handler that sleeps 30 seconds completes immediately in real time. The test is fast and not flaky.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> TestClientTimeout(t *testing.T) {
+	<span class="c">// Real network, real clock.</span>
+	srv := httptest.NewServer(http.HandlerFunc(
+		<span class="k">func</span>(w http.ResponseWriter, r *http.Request) {
+			time.Sleep(<span class="n">300</span> * time.Millisecond) <span class="c">// real wait</span>
+		}))
+	<span class="k">defer</span> srv.Close()
+
+	client := srv.Client()
+	client.Timeout = <span class="n">100</span> * time.Millisecond <span class="c">// small, can be flaky</span>
+
+	_, err := client.Get(srv.URL)
+	<span class="k">if</span> err == nil {
+		t.Fatal(<span class="s">"no timeout"</span>)
+	}
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> TestClientTimeout(t *testing.T) {
+	synctest.Test(t, <span class="k">func</span>(t *testing.T) {
+		<span class="c">// In-memory network, virtual clock.</span>
+		srv := httptest.NewTestServer(t, http.HandlerFunc(
+			<span class="k">func</span>(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(<span class="n">30</span> * time.Second) <span class="c">// virtual wait</span>
+			}))
+
+		client := srv.Client()
+		client.Timeout = <span class="n">5</span> * time.Second <span class="c">// realistic value</span>
+
+		_, err := client.Get(srv.URL)
+		<span class="k">if</span> err == nil {
+			t.Fatal(<span class="s">"no timeout"</span>)
+		}
+	})
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>client_test.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"net/http"</span>
+	<span class="s">"net/http/httptest"</span>
+	<span class="s">"testing"</span>
+	<span class="s">"testing/synctest"</span>
+	<span class="s">"time"</span>
+)
+
+<span class="k">func</span> TestClientTimeout(t *testing.T) {
+	synctest.Test(t, <span class="k">func</span>(t *testing.T) {
+		<span class="c">// In-memory network, virtual clock.</span>
+		srv := httptest.NewTestServer(t, http.HandlerFunc(
+			<span class="k">func</span>(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(30 * time.Second) <span class="c">// virtual wait</span>
+			}))
+
+		client := srv.Client()
+		client.Timeout = 5 * time.Second <span class="c">// realistic value</span>
+
+		_, err := client.Get(srv.URL)
+		<span class="k">if</span> err == nil {
+			t.Fatal(<span class="s">"no timeout"</span>)
+		}
+	})
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go test -v
+=== RUN   TestClientTimeout
+2000/01/01 00:00:10 httptest.Server blocked in Close after 5 seconds, waiting for connections:
+  *nettest.Conn 0x188471626498 192.0.2.1:10001 in state active
+--- PASS: TestClientTimeout (0.00s)
+PASS
+ok  	go17	0.004s</code></pre></div><p class="runnote">A test file has a name that ends in <code>_test.go</code>. You start it with <code>go test</code>. The log line about <code>Close</code> is not an error: at the end of the test the server waits for the handler, which sleeps on the virtual clock. The date in that line comes from the virtual clock. The address and the time values can be different on your computer.</p></details><div class="explain"><h5>What the code does</h5><p>This is a test. It makes sure that a client stops when the server is too slow.</p><p>The test starts a small server. The server waits before it answers. The client has a shorter time limit. Thus <code>client.Get</code> must return an error. If it returns no error, the test fails.</p><p>The old test uses the real network and the real clock. It takes 300 milliseconds, and the short time limit can fail on a busy computer. The new test uses a network in memory and a virtual clock. The wait of 30 seconds takes almost no real time.</p><h5>Data structures</h5><ul><li><code>t *testing.T</code> is the object that the test framework gives to each test. <code>t.Fatal</code> stops the test and marks it as failed.</li><li><code>srv</code> is the test server. <code>srv.URL</code> is its address. <code>srv.Client()</code> returns a client that can connect to it.</li><li><code>http.HandlerFunc(func(w, r) { ... })</code> is the handler: the function that the server calls for each request. <code>r</code> is the request. <code>w</code> writes the answer.</li><li><code>synctest.Test(t, func(t) { ... })</code> runs the function in a bubble. In the bubble, time moves forward only when all goroutines wait.</li><li><code>client.Timeout</code> is a field of type <code>time.Duration</code>: the maximum time for one request.</li></ul></div><p class="note note"><b>NOTE</b> <code>NewTestServer</code> registers its cleanup with <code>t.Cleanup</code>. A nil handler gives status 500. It does not use <code>http.DefaultServeMux</code>.</p></article><article id="perf-lib"><div class="thead"><span class="n">2.7</span><h3>Faster packages</h3><span class="tag v">Go 1.26</span><span class="tag v">Go 1.27</span><span class="tag z">No code change</span></div><p>These packages are faster after an upgrade. You do not change your code.</p><div class="tw"><table><thead><tr><th>Package</th><th>Release</th><th>Result</th><th>Check after the upgrade</th></tr></thead><tbody><tr><td><code>io.ReadAll</code></td><td>Go 1.26</td><td>About 2 times faster. About half of the memory.</td><td>Nothing</td></tr><tr><td><code>compress/flate</code></td><td>Go 1.27</td><td>Faster compression. Also for <code>gzip</code>, <code>zip</code>, <code>zlib</code>, <code>png</code>.</td><td>Compressed bytes can be different. Do not compare them with golden files.</td></tr><tr><td><code>image/jpeg</code></td><td>Go 1.26</td><td>Faster and more accurate encoder and decoder.</td><td>Pixels and bytes can be different. Correct tests that compare exact output.</td></tr></tbody></table></div></article></section><section class="part" id="runtime"><div class="parthead"><span class="n">3</span><div><h2>Runtime and hardware</h2><p>Most of these changes need no code change. You upgrade the toolchain and measure.</p></div></div><article id="greentea"><div class="thead"><span class="n">3.1</span><h3>Green Tea garbage collector</h3><span class="tag x">Experiment in Go 1.25</span><span class="tag v">Default in Go 1.26</span><span class="tag z">No code change</span></div><p>Green Tea is the new garbage collector. It decreases the collector overhead by 10% to 40% in real programs.</p><p>On recent <code>amd64</code> processors it uses AVX-512 during the scan. This gives approximately 10% more.</p><figure><div class="svgw"><svg viewBox="0 0 760 244" role="img" aria-label="The old collector jumped between pages for each pointer. Green Tea collects marks for each page and scans the page in one pass." style="min-width:620px"><defs><marker id="m5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m5b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m5c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><text x="20" y="26" class="th" text-anchor="start">Before: follow each pointer</text><text x="400" y="26" class="th" text-anchor="start">Green Tea: scan one page at a time</text><rect x="30" y="50" width="40" height="30" class="wn"/><rect x="70" y="50" width="40" height="30" class="bx"/><rect x="110" y="50" width="40" height="30" class="bx"/><rect x="150" y="50" width="40" height="30" class="bx"/><rect x="190" y="50" width="40" height="30" class="wn"/><rect x="230" y="50" width="40" height="30" class="bx"/><rect x="270" y="50" width="40" height="30" class="bx"/><rect x="310" y="50" width="40" height="30" class="wn"/><text x="26" y="45" class="ts" text-anchor="start">page 1</text><rect x="30" y="110" width="40" height="30" class="bx"/><rect x="70" y="110" width="40" height="30" class="wn"/><rect x="110" y="110" width="40" height="30" class="bx"/><rect x="150" y="110" width="40" height="30" class="bx"/><rect x="190" y="110" width="40" height="30" class="bx"/><rect x="230" y="110" width="40" height="30" class="wn"/><rect x="270" y="110" width="40" height="30" class="bx"/><rect x="310" y="110" width="40" height="30" class="bx"/><text x="26" y="105" class="ts" text-anchor="start">page 2</text><rect x="30" y="170" width="40" height="30" class="bx"/><rect x="70" y="170" width="40" height="30" class="bx"/><rect x="110" y="170" width="40" height="30" class="wn"/><rect x="150" y="170" width="40" height="30" class="bx"/><rect x="190" y="170" width="40" height="30" class="bx"/><rect x="230" y="170" width="40" height="30" class="bx"/><rect x="270" y="170" width="40" height="30" class="wn"/><rect x="310" y="170" width="40" height="30" class="bx"/><text x="26" y="165" class="ts" text-anchor="start">page 3</text><rect x="410" y="50" width="40" height="30" class="ac"/><rect x="450" y="50" width="40" height="30" class="bx"/><rect x="490" y="50" width="40" height="30" class="bx"/><rect x="530" y="50" width="40" height="30" class="bx"/><rect x="570" y="50" width="40" height="30" class="ac"/><rect x="610" y="50" width="40" height="30" class="bx"/><rect x="650" y="50" width="40" height="30" class="bx"/><rect x="690" y="50" width="40" height="30" class="ac"/><text x="406" y="45" class="ts" text-anchor="start">page 1</text><rect x="410" y="110" width="40" height="30" class="bx"/><rect x="450" y="110" width="40" height="30" class="ac"/><rect x="490" y="110" width="40" height="30" class="bx"/><rect x="530" y="110" width="40" height="30" class="bx"/><rect x="570" y="110" width="40" height="30" class="bx"/><rect x="610" y="110" width="40" height="30" class="ac"/><rect x="650" y="110" width="40" height="30" class="bx"/><rect x="690" y="110" width="40" height="30" class="bx"/><text x="406" y="105" class="ts" text-anchor="start">page 2</text><rect x="410" y="170" width="40" height="30" class="bx"/><rect x="450" y="170" width="40" height="30" class="bx"/><rect x="490" y="170" width="40" height="30" class="ac"/><rect x="530" y="170" width="40" height="30" class="bx"/><rect x="570" y="170" width="40" height="30" class="bx"/><rect x="610" y="170" width="40" height="30" class="bx"/><rect x="650" y="170" width="40" height="30" class="ac"/><rect x="690" y="170" width="40" height="30" class="bx"/><text x="406" y="165" class="ts" text-anchor="start">page 3</text><line x1="50" y1="65" x2="250" y2="125" class="lnc" marker-end="url(#m5c)"/><line x1="250" y1="125" x2="130" y2="185" class="lnc" marker-end="url(#m5c)"/><line x1="130" y1="185" x2="330" y2="65" class="lnc" marker-end="url(#m5c)"/><line x1="330" y1="65" x2="70" y2="125" class="lnc" marker-end="url(#m5c)"/><line x1="70" y1="125" x2="290" y2="185" class="lnc" marker-end="url(#m5c)"/><line x1="290" y1="185" x2="210" y2="65" class="lnc" marker-end="url(#m5c)"/><line x1="416" y1="65" x2="724" y2="65" class="lnb" marker-end="url(#m5b)"/><line x1="416" y1="125" x2="724" y2="125" class="lnb" marker-end="url(#m5b)"/><line x1="416" y1="185" x2="724" y2="185" class="lnb" marker-end="url(#m5b)"/><text x="20" y="232" class="ts" text-anchor="start">Each step can go to a different page.</text><text x="400" y="232" class="ts" text-anchor="start">Memory access is in sequence. Fewer cache misses.</text></svg></div><figcaption>Green Tea changes the unit of work from one object to one page of small objects. Modern CPUs read memory in sequence much faster.</figcaption></figure><div class="code "><div class="ch"><span>shell</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># Measure the collector before and after the upgrade.</span>
+GODEBUG=gctrace=1 ./myservice 2&gt;&amp;1 | head
+
+<span class="c"># Compare with the old collector (the setting is temporary; Go 1.27.4 still accepts it).</span>
+GOEXPERIMENT=nogreenteagc go build -o myservice-oldgc .</code></pre></div><div class="explain"><h5>What the code does</h5><p>The garbage collector is the part of the Go runtime that finds memory that the program does not use and makes it free.</p><p>The first command starts the program with the environment variable <code>GODEBUG=gctrace=1</code>. The program then prints one line for each collection. <code>2&gt;&amp;1 | head</code> shows only the first lines. An environment variable is a setting that the shell gives to a program.</p><p>The second command builds the program with the old collector, so that you can compare the two.</p></div></article><article id="simd"><div class="thead"><span class="n">3.2</span><h3>SIMD packages</h3><span class="tag x">Experiment</span><span class="tag v">Go 1.26 and Go 1.27</span></div><p>SIMD is one instruction that operates on many values. Go has two experimental packages.</p><p><code>simd/archsimd</code> gives direct access to the vector instructions of one architecture: <code>amd64</code>, <code>arm64</code> (NEON) and <code>wasm</code>.</p><p><code>simd</code> is portable. The vector width is not in the type name. If the hardware has no vector unit, the package emulates the operations.</p><figure><div class="svgw"><svg viewBox="0 0 760 190" role="img" aria-label="Scalar code adds four pairs with four instructions. SIMD code adds four pairs with one vector instruction." style="min-width:620px"><defs><marker id="m6a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m6c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><text x="20" y="26" class="th" text-anchor="start">Scalar: one instruction for each element</text><text x="400" y="26" class="th" text-anchor="start">SIMD: one instruction for one vector</text><rect x="30" y="44" width="56" height="26" rx="5" class="bx"/><text x="58.0" y="61.0" text-anchor="middle" class="tm">x[0]</text><text x="101" y="62" class="th" text-anchor="middle">+</text><rect x="116" y="44" width="56" height="26" rx="5" class="bx"/><text x="144.0" y="61.0" text-anchor="middle" class="tm">y[0]</text><text x="187" y="62" class="th" text-anchor="middle">=</text><rect x="202" y="44" width="56" height="26" rx="5" class="wn"/><text x="230.0" y="61.0" text-anchor="middle" class="tm">z[0]</text><rect x="30" y="78" width="56" height="26" rx="5" class="bx"/><text x="58.0" y="95.0" text-anchor="middle" class="tm">x[1]</text><text x="101" y="96" class="th" text-anchor="middle">+</text><rect x="116" y="78" width="56" height="26" rx="5" class="bx"/><text x="144.0" y="95.0" text-anchor="middle" class="tm">y[1]</text><text x="187" y="96" class="th" text-anchor="middle">=</text><rect x="202" y="78" width="56" height="26" rx="5" class="wn"/><text x="230.0" y="95.0" text-anchor="middle" class="tm">z[1]</text><rect x="30" y="112" width="56" height="26" rx="5" class="bx"/><text x="58.0" y="129.0" text-anchor="middle" class="tm">x[2]</text><text x="101" y="130" class="th" text-anchor="middle">+</text><rect x="116" y="112" width="56" height="26" rx="5" class="bx"/><text x="144.0" y="129.0" text-anchor="middle" class="tm">y[2]</text><text x="187" y="130" class="th" text-anchor="middle">=</text><rect x="202" y="112" width="56" height="26" rx="5" class="wn"/><text x="230.0" y="129.0" text-anchor="middle" class="tm">z[2]</text><rect x="30" y="146" width="56" height="26" rx="5" class="bx"/><text x="58.0" y="163.0" text-anchor="middle" class="tm">x[3]</text><text x="101" y="164" class="th" text-anchor="middle">+</text><rect x="116" y="146" width="56" height="26" rx="5" class="bx"/><text x="144.0" y="163.0" text-anchor="middle" class="tm">y[3]</text><text x="187" y="164" class="th" text-anchor="middle">=</text><rect x="202" y="146" width="56" height="26" rx="5" class="wn"/><text x="230.0" y="163.0" text-anchor="middle" class="tm">z[3]</text><rect x="420" y="44" width="70" height="30" rx="5" class="bx"/><text x="455.0" y="63.0" text-anchor="middle" class="tm">x[0]</text><rect x="490" y="44" width="70" height="30" rx="5" class="bx"/><text x="525.0" y="63.0" text-anchor="middle" class="tm">x[1]</text><rect x="560" y="44" width="70" height="30" rx="5" class="bx"/><text x="595.0" y="63.0" text-anchor="middle" class="tm">x[2]</text><rect x="630" y="44" width="70" height="30" rx="5" class="bx"/><text x="665.0" y="63.0" text-anchor="middle" class="tm">x[3]</text><rect x="420" y="92" width="70" height="30" rx="5" class="bx"/><text x="455.0" y="111.0" text-anchor="middle" class="tm">y[0]</text><rect x="490" y="92" width="70" height="30" rx="5" class="bx"/><text x="525.0" y="111.0" text-anchor="middle" class="tm">y[1]</text><rect x="560" y="92" width="70" height="30" rx="5" class="bx"/><text x="595.0" y="111.0" text-anchor="middle" class="tm">y[2]</text><rect x="630" y="92" width="70" height="30" rx="5" class="bx"/><text x="665.0" y="111.0" text-anchor="middle" class="tm">y[3]</text><rect x="420" y="140" width="70" height="30" rx="5" class="ac"/><text x="455.0" y="159.0" text-anchor="middle" class="tm">z[0]</text><rect x="490" y="140" width="70" height="30" rx="5" class="ac"/><text x="525.0" y="159.0" text-anchor="middle" class="tm">z[1]</text><rect x="560" y="140" width="70" height="30" rx="5" class="ac"/><text x="595.0" y="159.0" text-anchor="middle" class="tm">z[2]</text><rect x="630" y="140" width="70" height="30" rx="5" class="ac"/><text x="665.0" y="159.0" text-anchor="middle" class="tm">z[3]</text><text x="408" y="112" class="th" text-anchor="end">+</text><text x="408" y="160" class="th" text-anchor="end">=</text><text x="275" y="100" class="ts" text-anchor="start">4 adds</text><text x="712" y="112" class="ts" text-anchor="start">1 add</text></svg></div><figcaption>A vector register holds many elements, called lanes. The simd package hides the lane count, which is different for each CPU.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Scalar loop</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// y = a*x + y</span>
+<span class="k">func</span> axpy(a float32, x, y []float32) {
+	<span class="k">for</span> i := <span class="k">range</span> x {
+		y[i] = a*x[i] + y[i]
+	}
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27 experiment: package simd</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">//go:build goexperiment.simd</span>
+
+<span class="k">import</span> <span class="s">"simd"</span>
+
+<span class="c">// y = a*x + y</span>
+<span class="k">func</span> axpy(a float32, x, y []float32) {
+	va := simd.BroadcastFloat32s(a)
+	n := va.Len() <span class="c">// lanes: different for each CPU</span>
+
+	i := <span class="n">0</span>
+	<span class="k">for</span> ; i+n &lt;= len(x); i += n {
+		vx := simd.LoadFloat32s(x[i:])
+		vy := simd.LoadFloat32s(y[i:])
+		va.MulAdd(vx, vy).Store(y[i:]) <span class="c">// a*x + y</span>
+	}
+	<span class="k">for</span> ; i &lt; len(x); i++ { <span class="c">// remainder</span>
+		y[i] = a*x[i] + y[i]
+	}
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">//go:build goexperiment.simd</span>
+
+<span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"simd"</span>
+)
+
+<span class="c">// y = a*x + y</span>
+<span class="k">func</span> axpy(a float32, x, y []float32) {
+	va := simd.BroadcastFloat32s(a)
+	n := va.Len() <span class="c">// lanes: different for each CPU</span>
+
+	i := 0
+	<span class="k">for</span> ; i+n &lt;= len(x); i += n {
+		vx := simd.LoadFloat32s(x[i:])
+		vy := simd.LoadFloat32s(y[i:])
+		va.MulAdd(vx, vy).Store(y[i:]) <span class="c">// a*x + y</span>
+	}
+	<span class="k">for</span> ; i &lt; len(x); i++ { <span class="c">// remainder</span>
+		y[i] = a*x[i] + y[i]
+	}
+}
+
+<span class="k">func</span> main() {
+	x := []float32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	y := []float32{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+	axpy(2, x, y)
+	fmt.Println(y)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ GOEXPERIMENT=simd go run .
+[3 5 7 9 11 13 15 17 19 21]</code></pre></div><p class="runnote">The file has a build constraint, thus <code>go run .</code> without <code>GOEXPERIMENT=simd</code> fails.</p></details><div class="explain"><h5>What the code does</h5><p><code>axpy</code> calculates <code>y = a*x + y</code> for each position: it multiplies each item of <code>x</code> by <code>a</code>, adds the item of <code>y</code>, and puts the result in <code>y</code>. Graphics, audio and machine learning use this operation.</p><p>The scalar loop does one item in each step. The SIMD version does many items in each step. The number of items is the lane count, <code>n</code>, for example 8 or 16.</p><p>The first loop takes <code>n</code> items at a time while sufficient items remain. The second loop does the remaining items one at a time. The result is the same as the scalar loop.</p><h5>Data structures</h5><ul><li><code>x</code> and <code>y</code> are slices of <code>float32</code>: numbers of 32 bits that can have a fraction.</li><li><code>va</code> is a vector that holds <code>a</code> in each lane. A vector is a small fixed group of numbers that the CPU processes in one instruction.</li><li><code>vx</code> and <code>vy</code> are vectors that the code loads from the slices. <code>x[i:]</code> is the part of <code>x</code> from position <code>i</code> to the end.</li><li><code>va.MulAdd(vx, vy)</code> calculates <code>va*vx + vy</code> for all lanes. <code>.Store(y[i:])</code> writes the result back into <code>y</code>.</li><li><code>//go:build goexperiment.simd</code> is a build constraint. The compiler uses the file only when the experiment is on.</li></ul></div><div class="code "><div class="ch"><span>shell</span><button class="cp" type="button">Copy</button></div><pre><code>GOEXPERIMENT=simd go run .</code></pre></div><div class="explain"><h5>What the code does</h5><p>The command starts the program with the SIMD experiment on. If you do not set <code>GOEXPERIMENT=simd</code>, the build fails.</p></div><p class="note caution"><b>CAUTION</b> The API is not stable. Do not use it in production code that you cannot change quickly. The Go team plans to graduate a large subset in Go 1.28.</p></article><article id="stack-slices"><div class="thead"><span class="n">3.3</span><h3>Slice backing stores on the stack</h3><span class="tag v">Go 1.26</span><span class="tag z">No code change</span></div><p>The compiler now puts the first backing store of a slice on the stack at an <code>append</code> site. This also applies to a slice that escapes later.</p><p>Small slices cause fewer heap allocations. You can remove capacity values that you tuned by hand.</p><figure><div class="svgw"><svg viewBox="0 0 760 224" role="img" aria-label="In Go 1.25 a growing slice made several heap allocations. In Go 1.26 the first appends use a buffer on the stack." style="min-width:620px"><defs><marker id="m7a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m7b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m7c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><text x="20" y="26" class="th" text-anchor="start">Go 1.25: append grows on the heap</text><text x="400" y="26" class="th" text-anchor="start">Go 1.26: append starts on the stack</text><rect x="30" y="46" width="24" height="26" rx="3" class="wn"/><text x="64" y="63" class="ts" text-anchor="start">cap 1, garbage</text><rect x="30" y="84" width="48" height="26" rx="3" class="wn"/><text x="88" y="101" class="ts" text-anchor="start">cap 2, garbage</text><rect x="30" y="122" width="96" height="26" rx="3" class="wn"/><text x="136" y="139" class="ts" text-anchor="start">cap 4, garbage</text><rect x="30" y="160" width="192" height="26" rx="3" class="bx"/><text x="232" y="177" class="ts" text-anchor="start">cap 8, in use</text><text x="20" y="212" class="ts" text-anchor="start">4 allocations. 3 become garbage.</text><rect x="410" y="46" width="170" height="110" rx="5" class="pn"/><text x="495" y="66" class="ts" text-anchor="middle">stack frame</text><rect x="425" y="80" width="140" height="34" rx="5" class="ac"/><text x="495.0" y="101.0" text-anchor="middle" class="th">small buffer</text><text x="495" y="136" class="ts" text-anchor="middle">first appends: 0 allocations</text><rect x="630" y="76" width="110" height="42" rx="5" class="bx"/><text x="685.0" y="94.0" text-anchor="middle" class="th">heap</text><text x="685.0" y="110.0" text-anchor="middle" class="ts">exact size</text><line x1="565" y1="97" x2="628" y2="97" class="lnb" marker-end="url(#m7b)"/><text x="606" y="88" class="ts" text-anchor="middle">at return</text><text x="400" y="212" class="ts" text-anchor="start">The slice goes to the heap only where it escapes.</text></svg></div><figcaption>The compiler puts a small backing store on the stack at the append site. If the slice escapes, the runtime copies it to the heap one time.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> collect(ch &lt;-<span class="k">chan</span> task) []task {
+	<span class="c">// Manual tuning to prevent the first allocations.</span>
+	tasks := make([]task, <span class="n">0</span>, <span class="n">16</span>)
+	<span class="k">for</span> t := <span class="k">range</span> ch {
+		tasks = append(tasks, t)
+	}
+	<span class="k">return</span> tasks
+}</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> collect(ch &lt;-<span class="k">chan</span> task) []task {
+	<span class="c">// The compiler supplies a small stack buffer.</span>
+	<span class="k">var</span> tasks []task
+	<span class="k">for</span> t := <span class="k">range</span> ch {
+		tasks = append(tasks, t)
+	}
+	<span class="k">return</span> tasks
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> <span class="s">"fmt"</span>
+
+<span class="k">type</span> task <span class="k">struct</span>{ id int }
+
+<span class="k">func</span> collect(ch &lt;-<span class="k">chan</span> task) []task {
+	<span class="c">// The compiler supplies a small stack buffer.</span>
+	<span class="k">var</span> tasks []task
+	<span class="k">for</span> t := <span class="k">range</span> ch {
+		tasks = append(tasks, t)
+	}
+	<span class="k">return</span> tasks
+}
+
+<span class="k">func</span> main() {
+	ch := make(<span class="k">chan</span> task)
+
+	<span class="c">// A goroutine sends five tasks and then closes the channel.</span>
+	<span class="k">go</span> <span class="k">func</span>() {
+		<span class="k">for</span> i := 1; i &lt;= 5; i++ {
+			ch &lt;- task{id: i}
+		}
+		close(ch)
+	}()
+
+	fmt.Println(collect(ch))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+[{1} {2} {3} {4} {5}]</code></pre></div></details><div class="explain"><h5>What the code does</h5><p><code>collect</code> reads tasks from a channel until the channel is closed. It returns the tasks as a list.</p><p>In the old code the programmer makes space for 16 tasks at the start. Without this, the slice grows many times and each growth is a memory allocation. In the new code you declare an empty slice. The compiler supplies the first space.</p><h5>Data structures</h5><ul><li><code>ch &lt;-chan task</code> is a channel from which this function can only receive.</li><li><code>for t := range ch</code> receives values until the channel is closed.</li><li><code>tasks</code> is a slice. A slice has a backing store: the block of memory that holds the items. When the block is full, <code>append</code> gets a larger block and copies the items.</li><li><code>make([]task, 0, 16)</code> makes a slice with length 0 and space (capacity) for 16 items.</li><li>The stack is the fast memory of one function call. It becomes free when the function returns. The heap is shared memory that the garbage collector cleans. Stack memory is cheaper.</li><li><code>task</code> is a type from your program. Its contents are not important here.</li></ul></div><div class="code "><div class="ch"><span>shell</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># Measure the allocations of your function.</span>
+go test -bench=Collect -benchmem
+
+<span class="c"># Stop the new stack allocations if you suspect a problem.</span>
+go build -gcflags=all=-d=variablemakehash=n ./...</code></pre></div><div class="explain"><h5>What the code does</h5><p>The first command runs the benchmarks with Collect in their name. A benchmark is a function in a test file that measures speed. <code>-benchmem</code> adds the number of memory allocations for each operation. A smaller number is better.</p><p>The second command builds the program with the new optimization off. Use it only to find out if the optimization causes a problem.</p></div></article><article id="small-alloc"><div class="thead"><span class="n">3.4</span><h3>Small allocations and cgo calls</h3><span class="tag v">Go 1.26</span><span class="tag v">Go 1.27</span><span class="tag z">No code change</span></div><ul><li><b>Size-specialized allocation (Go 1.27).</b> The compiler calls a special allocator routine for each size class up to 80 bytes. These allocations are up to 30% faster. The opt-out is <code>GOEXPERIMENT=nosizespecializedmalloc</code>.</li><li><b>cgo (Go 1.26).</b> The base overhead of each cgo call is approximately 30% smaller.</li></ul></article></section><section class="part" id="security"><div class="parthead"><span class="n">4</span><div><h2>Security</h2><p>Post-quantum cryptography by default, safer random sources, and a fast incident response.</p></div></div><article id="pq-tls"><div class="thead"><span class="n">4.1</span><h3>Post-quantum key exchange in TLS</h3><span class="tag v">Go 1.26</span><span class="tag z">No code change</span></div><p>A future quantum computer can break classical key exchange. An attacker can record traffic today and decrypt it later.</p><p><code>crypto/tls</code> now enables the hybrid key exchanges <code>SecP256r1MLKEM768</code> and <code>SecP384r1MLKEM1024</code> by default. The hybrid <code>X25519MLKEM768</code> was a default from Go 1.24.</p><figure><div class="svgw"><svg viewBox="0 0 760 226" role="img" aria-label="A hybrid key exchange runs a classical exchange and a post-quantum exchange and combines the two secrets." style="min-width:620px"><defs><marker id="m8a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m8b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m8c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><rect x="20" y="60" width="120" height="90" rx="5" class="bx"/><text x="80.0" y="109.0" text-anchor="middle" class="th">Client</text><rect x="620" y="60" width="120" height="90" rx="5" class="bx"/><text x="680.0" y="109.0" text-anchor="middle" class="th">Server</text><line x1="142" y1="82" x2="618" y2="82" class="ln" marker-end="url(#m8a)" marker-start="url(#m8a)"/><line x1="142" y1="128" x2="618" y2="128" class="lnb" marker-end="url(#m8b)" marker-start="url(#m8b)"/><text x="380" y="72" class="t" text-anchor="middle">ECDH P-256 key share (classical)</text><text x="380" y="118" class="t" text-anchor="middle">ML-KEM-768 key share (post-quantum)</text><line x1="200" y1="84" x2="290" y2="172" class="ln" marker-end="url(#m8a)"/><line x1="560" y1="130" x2="470" y2="172" class="lnb" marker-end="url(#m8b)"/><rect x="270" y="174" width="220" height="40" rx="5" class="ac"/><text x="380.0" y="191.0" text-anchor="middle" class="th">one session secret</text><text x="380.0" y="207.0" text-anchor="middle" class="ts">from the two results</text><text x="380" y="30" class="tm" text-anchor="middle">SecP256r1MLKEM768</text></svg></div><figcaption>A hybrid key exchange is safe if one of its two parts is safe. An attacker must break the two parts.</figcaption></figure><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.24</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Default: no ML-KEM key exchange.</span>
+conn, err := tls.Dial(<span class="s">"tcp"</span>, <span class="s">"example.com:443"</span>, &amp;tls.Config{})
+<span class="k">if</span> err != nil {
+	log.Fatal(err)
+}
+<span class="k">defer</span> conn.Close()</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26 and later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Default: hybrid key exchange if the server supports it.</span>
+conn, err := tls.Dial(<span class="s">"tcp"</span>, <span class="s">"example.com:443"</span>, &amp;tls.Config{})
+<span class="k">if</span> err != nil {
+	log.Fatal(err)
+}
+<span class="k">defer</span> conn.Close()
+
+<span class="c">// Print the key exchange of the connection.</span>
+fmt.Println(conn.ConnectionState().CurveID)</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"crypto/tls"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+)
+
+<span class="k">func</span> main() {
+	<span class="c">// Default: hybrid key exchange if the server supports it.</span>
+	conn, err := tls.Dial(<span class="s">"tcp"</span>, <span class="s">"example.com:443"</span>, &amp;tls.Config{})
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+	<span class="k">defer</span> conn.Close()
+
+	<span class="c">// Print the key exchange of the connection.</span>
+	fmt.Println(conn.ConnectionState().CurveID)
+}
+</code></pre></div><p class="runnote">This program needs an internet connection, thus no output was recorded for example.com. The result depends on the server. In a test with a Go server on the same computer, the program printed X25519MLKEM768.</p></details><div class="explain"><h5>What the code does</h5><p>The code opens an encrypted connection to <code>example.com</code> on port 443. TLS is the protocol that makes HTTPS secure. If the connection fails, the program stops. <code>defer conn.Close()</code> closes the connection at the end.</p><p>The code is almost the same in the two blocks. The change is in the default key exchange: the step where the two sides agree on a secret key.</p><p>The last line of the new block prints the name of the key exchange that the connection used.</p><h5>Data structures</h5><ul><li><code>conn</code> is a <code>*tls.Conn</code>: an open connection. You write bytes to it and read bytes from it.</li><li><code>&amp;tls.Config{}</code> is a struct of settings. An empty struct means: use all the defaults.</li><li><code>"tcp"</code> is the network type. <code>"example.com:443"</code> is the host name and the port number.</li><li><code>conn.ConnectionState()</code> returns a struct with data about the connection. Its field <code>CurveID</code> names the key exchange, for example <code>X25519MLKEM768</code>.</li></ul></div><p class="note note"><b>NOTE</b> To go back, set <code>Config.CurvePreferences</code> or use <code>GODEBUG=tlssecpmlkem=0</code>. Do this only for a compatibility problem. This setting stops only the two SecP hybrids. <code>GODEBUG=tlsmlkem=0</code> stops <code>X25519MLKEM768</code>. Two Go programs select <code>X25519MLKEM768</code>.</p></article><article id="hpke"><div class="thead"><span class="n">4.2</span><h3>crypto/hpke</h3><span class="tag v">Go 1.26</span></div><p>HPKE (RFC 9180) encrypts a message for the holder of a public key. The package includes post-quantum hybrid KEMs.</p><div class="code "><div class="ch "><span>Go 1.26: encrypt for a public key</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"crypto/hpke"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+)
+
+<span class="k">func</span> main() {
+	kem := hpke.MLKEM768X25519() <span class="c">// post-quantum hybrid KEM</span>
+	kdf := hpke.HKDFSHA256()
+	aead := hpke.AES256GCM()
+
+	<span class="c">// Recipient: make a key pair.</span>
+	priv, err := kem.GenerateKey()
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+
+	<span class="c">// Sender: encrypt for the public key.</span>
+	info := []byte(<span class="s">"orders-v1"</span>)
+	ct, err := hpke.Seal(priv.PublicKey(), kdf, aead, info, []byte(<span class="s">"hello"</span>))
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+
+	<span class="c">// Recipient: decrypt.</span>
+	pt, err := hpke.Open(priv, kdf, aead, info, ct)
+	fmt.Println(string(pt), err)
+}</code></pre></div><details class="run"><summary>Output of the program</summary><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+hello &lt;nil&gt;</code></pre></div><p class="runnote">The example above is a complete program.</p></details><div class="explain"><h5>What the code does</h5><p>The program shows public-key encryption. The recipient makes a pair of keys. The private key stays secret. The public key can go to all persons.</p><p>The sender encrypts the text hello with the public key. Only the private key can decrypt it. The program prints <code>hello &lt;nil&gt;</code>: the text, and no error.</p><p><code>info</code> is a label. The two sides must use the same label. It connects the message to one purpose.</p><h5>Data structures</h5><ul><li><code>kem</code>, <code>kdf</code> and <code>aead</code> select three algorithms. The KEM makes a shared secret from the public key. The KDF makes keys from that secret. The AEAD encrypts the message and finds changes to it.</li><li><code>priv</code> is the private key. <code>priv.PublicKey()</code> gives the public key that goes with it.</li><li><code>[]byte("hello")</code> changes text to a slice of bytes. Encryption functions use bytes.</li><li><code>ct</code> is the ciphertext: the encrypted bytes. <code>pt</code> is the plaintext: the bytes after decryption.</li></ul></div><p class="note note"><b>NOTE</b> Before Go 1.26 this operation needed an external module.</p></article><article id="mldsa"><div class="thead"><span class="n">4.3</span><h3>crypto/mldsa</h3><span class="tag v">Go 1.27</span></div><p>ML-DSA (FIPS 204) is a post-quantum signature scheme. <code>crypto/x509</code> and <code>crypto/tls</code> also support it.</p><p>Go now has standard post-quantum algorithms for key exchange and for signatures.</p><div class="ba"><div class="code before"><div class="ch before"><span>Classical: crypto/ecdsa</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Classical signature: ECDSA P-256.</span>
+priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+<span class="k">if</span> err != nil {
+	log.Fatal(err)
+}
+digest := sha256.Sum256(msg)
+sig, err := ecdsa.SignASN1(rand.Reader, priv, digest[:])
+
+ok := ecdsa.VerifyASN1(&amp;priv.PublicKey, digest[:], sig)</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27: crypto/mldsa</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// Post-quantum signature: ML-DSA-44.</span>
+priv, err := mldsa.GenerateKey(mldsa.MLDSA44())
+<span class="k">if</span> err != nil {
+	log.Fatal(err)
+}
+opts := &amp;mldsa.Options{Context: <span class="s">"orders-v1"</span>}
+sig, err := priv.Sign(nil, msg, opts) <span class="c">// no digest step</span>
+
+err = mldsa.Verify(priv.PublicKey(), msg, sig, opts)
+<span class="c">// err == nil: the signature is valid</span></code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"crypto/mldsa"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+)
+
+<span class="k">func</span> main() {
+	msg := []byte(<span class="s">"order 42"</span>)
+
+	<span class="c">// Post-quantum signature: ML-DSA-44.</span>
+	priv, err := mldsa.GenerateKey(mldsa.MLDSA44())
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+
+	opts := &amp;mldsa.Options{Context: <span class="s">"orders-v1"</span>}
+	sig, err := priv.Sign(nil, msg, opts) <span class="c">// no digest step</span>
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(<span class="s">"signature bytes:"</span>, len(sig))
+
+	err = mldsa.Verify(priv.PublicKey(), msg, sig, opts)
+	fmt.Println(<span class="s">"correct message:"</span>, err)
+
+	<span class="c">// A changed message does not pass.</span>
+	err = mldsa.Verify(priv.PublicKey(), []byte(<span class="s">"order 43"</span>), sig, opts)
+	fmt.Println(<span class="s">"changed message:"</span>, err)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+signature bytes: 2420
+correct message: &lt;nil&gt;
+changed message: mldsa: invalid signature</code></pre></div></details><div class="explain"><h5>What the code does</h5><p>A digital signature shows that a message came from the holder of a private key and that nobody changed it. Each block makes a key, signs a message, and examines the signature.</p><p>The classical code first calculates a digest: a short fingerprint of the message with a fixed size. Then it signs the digest. The ML-DSA code signs the message directly.</p><p>The result of the check is different. <code>ecdsa.VerifyASN1</code> returns true or false. <code>mldsa.Verify</code> returns an error, and <code>nil</code> means that the signature is correct.</p><h5>Data structures</h5><ul><li><code>priv</code> is the private key. The public key is a part of it.</li><li><code>msg</code> is the message as a slice of bytes.</li><li><code>digest</code> is an array of 32 bytes. <code>digest[:]</code> makes a slice from the array, because the function wants a slice.</li><li><code>sig</code> is the signature: a slice of bytes.</li><li><code>opts</code> is a pointer to an <code>mldsa.Options</code> struct. <code>Context</code> is a label. Use the same label when you sign and when you examine.</li><li><code>rand.Reader</code> is the secure source of random bytes of the system.</li></ul></div><p class="note note"><b>NOTE</b> An ML-DSA-44 public key has 1312 bytes and a signature has 2420 bytes. An ECDSA P-256 signature has approximately 70 bytes. Plan for the size.</p></article><article id="random"><div class="thead"><span class="n">4.4</span><h3>Secure random source in crypto</h3><span class="tag v">Go 1.26</span></div><p>Most functions that make keys or signatures now ignore the random parameter. They always use the secure random source of the system.</p><p>A weak or predictable reader cannot make a weak key. For tests that need fixed output, use <code>testing/cryptotest</code>.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// The function used the reader that you gave.</span>
+<span class="c">// A bad reader made a bad key.</span>
+priv, err := ecdsa.GenerateKey(elliptic.P256(), myReader)
+
+<span class="c">// Deterministic test: a fixed reader.</span>
+priv, err = ecdsa.GenerateKey(elliptic.P256(), fixedReader)</code></pre></div><div class="code after"><div class="ch after"><span>Go 1.26</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">// The reader is ignored. The key is always secure.</span>
+priv, err := ecdsa.GenerateKey(elliptic.P256(), nil)
+
+<span class="c">// Deterministic test: set the global source for this test.</span>
+<span class="k">func</span> TestSign(t *testing.T) {
+	cryptotest.SetGlobalRandom(t, <span class="n">42</span>)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), nil)
+	<span class="c">// ...</span>
+}</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"crypto/ecdsa"</span>
+	<span class="s">"crypto/elliptic"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+)
+
+<span class="k">func</span> newKey() *ecdsa.PrivateKey {
+	<span class="c">// The reader is ignored. The key is always secure.</span>
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), nil)
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+	<span class="k">return</span> priv
+}
+
+<span class="k">func</span> main() {
+	a, b := newKey(), newKey()
+	fmt.Println(<span class="s">"same key:"</span>, a.Equal(b))
+}
+</code></pre></div><div class="code "><div class="ch"><span>key_test.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"testing"</span>
+	<span class="s">"testing/cryptotest"</span>
+)
+
+<span class="k">func</span> TestKey(t *testing.T) {
+	<span class="c">// Deterministic test: set the global source for this test.</span>
+	cryptotest.SetGlobalRandom(t, 42)
+
+	b, err := newKey().Bytes()
+	<span class="k">if</span> err != nil {
+		t.Fatal(err)
+	}
+	t.Logf(<span class="s">"key starts with %x"</span>, b[:4])
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+same key: false
+$ go test -v
+=== RUN   TestKey
+    key_test.go:16: key starts with 22301fb8
+--- PASS: TestKey (0.00s)
+PASS
+ok  	go17	0.002s</code></pre></div><p class="runnote"><code>go test</code> prints the same key bytes in each run, because the seed is fixed. <code>go run .</code> makes two different keys.</p></details><div class="explain"><h5>What the code does</h5><p>The code makes an ECDSA key. The second argument of <code>GenerateKey</code> is a source of random bytes.</p><p>In the old code the function used the source that you gave. A weak source made a weak key. Tests used a fixed source to get the same key each time.</p><p>In the new code the function ignores the argument. You can give <code>nil</code>. It always uses the secure source of the system. A test that needs the same key each time calls <code>cryptotest.SetGlobalRandom</code>. This call applies only to that one test.</p><h5>Data structures</h5><ul><li><code>myReader</code> and <code>fixedReader</code> are readers: values that supply bytes.</li><li><code>priv</code> is a pointer to an <code>ecdsa.PrivateKey</code>.</li><li><code>elliptic.P256()</code> names the curve: the mathematical parameters of the key.</li><li><code>t *testing.T</code> is the object of the test. The number 42 is the seed. The same seed gives the same random bytes.</li></ul></div><p class="note note"><b>NOTE</b> <code>GODEBUG=cryptocustomrand=1</code> brings back the old behavior for a limited time.</p></article><article id="hardening"><div class="thead"><span class="n">4.5</span><h3>Runtime hardening</h3><span class="tag v">Go 1.26</span><span class="tag x">Experiment</span></div><ul><li><b>Heap base address.</b> On 64-bit systems the runtime gives the heap a random base address at start. This makes memory attacks on cgo programs more difficult.</li><li><b>runtime/secret.</b> This experimental package erases temporary secret data from registers, the stack and the heap. It supports <code>amd64</code> and <code>arm64</code> on Linux.</li></ul><div class="code "><div class="ch "><span>Go 1.26 experiment: GOEXPERIMENT=runtimesecret</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">//go:build goexperiment.runtimesecret</span>
+
+<span class="k">import</span> <span class="s">"runtime/secret"</span>
+
+<span class="k">var</span> sessionKey []byte
+
+<span class="k">func</span> handshake(priv *ecdh.PrivateKey, peer *ecdh.PublicKey) {
+	secret.Do(<span class="k">func</span>() {
+		shared, err := priv.ECDH(peer) <span class="c">// temporary secret</span>
+		<span class="k">if</span> err != nil {
+			<span class="k">return</span>
+		}
+		sessionKey = deriveKey(shared)
+	})
+	<span class="c">// The runtime erased the temporaries of the function.</span>
+}</code></pre></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c">//go:build goexperiment.runtimesecret</span>
+
+<span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"crypto/ecdh"</span>
+	<span class="s">"crypto/rand"</span>
+	<span class="s">"crypto/sha256"</span>
+	<span class="s">"fmt"</span>
+	<span class="s">"log"</span>
+	<span class="s">"runtime/secret"</span>
+)
+
+<span class="k">var</span> sessionKey []byte
+
+<span class="k">func</span> deriveKey(shared []byte) []byte {
+	sum := sha256.Sum256(shared)
+	<span class="k">return</span> sum[:]
+}
+
+<span class="k">func</span> handshake(priv *ecdh.PrivateKey, peer *ecdh.PublicKey) {
+	secret.Do(<span class="k">func</span>() {
+		shared, err := priv.ECDH(peer) <span class="c">// temporary secret</span>
+		<span class="k">if</span> err != nil {
+			<span class="k">return</span>
+		}
+		sessionKey = deriveKey(shared)
+	})
+	<span class="c">// The runtime erased the temporaries of the function.</span>
+}
+
+<span class="k">func</span> main() {
+	<span class="c">// Two key pairs: this side and the other side.</span>
+	mine, err := ecdh.X25519().GenerateKey(rand.Reader)
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+	theirs, err := ecdh.X25519().GenerateKey(rand.Reader)
+	<span class="k">if</span> err != nil {
+		log.Fatal(err)
+	}
+
+	handshake(mine, theirs.PublicKey())
+	fmt.Println(<span class="s">"session key bytes:"</span>, len(sessionKey))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ GOEXPERIMENT=runtimesecret go run .
+session key bytes: 32</code></pre></div><p class="runnote">The file has a build constraint, thus you must set <code>GOEXPERIMENT=runtimesecret</code>.</p></details><div class="explain"><h5>What the code does</h5><p>Two sides calculate a shared secret from a private key and the public key of the other side. Then they make a session key from it.</p><p>The shared secret is temporary. It must not stay in memory, where a later defect or a crash report can show it. <code>secret.Do</code> runs the function and then erases the data that the function left in the CPU registers, on the stack and on the heap.</p><p>The session key stays, because the program continues to use it.</p><h5>Data structures</h5><ul><li><code>priv</code> is a pointer to a private key. <code>peer</code> is a pointer to the public key of the other side.</li><li><code>shared</code> is a slice of bytes: the temporary secret.</li><li><code>sessionKey</code> is a package-level variable. It is declared outside all functions and exists for the full life of the program.</li><li><code>func() { ... }</code> is a function with no name. It can use the variables of the function around it, here <code>priv</code> and <code>peer</code>.</li><li><code>deriveKey</code> is a function from your program. It is not shown.</li></ul></div></article><article id="incident"><div class="thead"><span class="n">4.6</span><h3>The eMudhra incident and govulncheck</h3><span class="tag ">October 2026</span></div><p>In October, eight intermediate certificates of a trusted root CA had weak private keys. The certificates were for TLS and for code signing.</p><p>Linux has no common revocation mechanism in the operating system. Thus the TLS verifier of Go is an important defense.</p><p>For the full story of the incident, refer to the guide <a href="emudhra-weak-ca-keys.html">Eight keys, 256 guesses: the eMudhra weak CA keys</a>.</p><figure><div class="svgw"><svg viewBox="0 0 760 118" role="img" aria-label="Timeline of the October certificate incident: report, release after about 7.5 hours, vulnerability database entry, public disclosure the next morning." style="min-width:620px"><defs><marker id="m9a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m9b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m9c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><line x1="60" y1="40" x2="700" y2="40" class="ln"/><circle cx="60" cy="40" r="7" class="wn"/><text x="60" y="70" class="th" text-anchor="start">Report</text><text x="60" y="88" class="ts" text-anchor="start">8 certificates with</text><text x="60" y="104" class="ts" text-anchor="start">weak private keys</text><circle cx="290" cy="40" r="7" class="ac"/><text x="290" y="70" class="th" text-anchor="middle">About 7.5 hours later</text><text x="290" y="88" class="ts" text-anchor="middle">Go 1.27.3 and Go 1.26.10</text><text x="290" y="104" class="ts" text-anchor="middle">block the certificates</text><circle cx="500" cy="40" r="7" class="ac"/><text x="500" y="70" class="th" text-anchor="middle">Same response</text><text x="500" y="88" class="ts" text-anchor="middle">Vulnerability database entry</text><text x="500" y="104" class="ts" text-anchor="middle">govulncheck finds old binaries</text><circle cx="700" cy="40" r="7" class="bx"/><text x="700" y="70" class="th" text-anchor="end">Next morning</text><text x="700" y="88" class="ts" text-anchor="end">Public disclosure</text><text x="700" y="104" class="ts" text-anchor="end">of the keys</text></svg></div><figcaption>The fix was available before the public disclosure of the keys.</figcaption></figure><p>Do this procedure to make sure that your programs have the fix.</p><ol><li>Install the tool: <code>go install golang.org/x/vuln/cmd/govulncheck@latest</code></li><li>Examine the source: <code>govulncheck ./...</code></li><li>Examine a binary that is in service: <code>govulncheck -mode=binary ./bin/myservice</code></li><li>If the tool reports the standard library, upgrade the toolchain to Go 1.27.3 or later: <code>go get toolchain@go1.27.3</code>. On the Go 1.26 line, use <code>go1.26.10</code> or later.</li><li>Build the program again and deploy it.</li></ol><p class="note note"><b>NOTE</b> <code>gopls</code> now starts <code>govulncheck</code> automatically when the dependencies in <code>go.mod</code> change.</p></article></section><section class="part" id="tooling"><div class="parthead"><span class="n">5</span><div><h2>Tools</h2><p>The top problem in the 2025 developer survey was to follow current idioms. The tools now do this work.</p></div></div><article id="gofix"><div class="thead"><span class="n">5.1</span><h3>go fix and the modernizers</h3><span class="tag v">Go 1.26</span></div><p>Go 1.26 has a fully rebuilt <code>go fix</code> command. It has dozens of modernizers. A modernizer finds an old idiom and replaces it with the current one.</p><p>The fixes do not change the behavior of the program. <code>gopls</code> shows the same fixes as suggestions in the editor.</p><figure><div class="svgw"><svg viewBox="0 0 760 190" role="img" aria-label="The same analyzers feed go vet, go fix and gopls." style="min-width:620px"><defs><marker id="m10a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mka"/></marker><marker id="m10b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkb"/></marker><marker id="m10c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="mkc"/></marker></defs><rect x="20" y="66" width="230" height="64" rx="5" class="ac"/><text x="135.0" y="95.0" text-anchor="middle" class="th">Analyzers</text><text x="135.0" y="111.0" text-anchor="middle" class="ts">go/analysis framework</text><text x="135" y="150" class="ts" text-anchor="middle">modernizers</text><text x="135" y="166" class="tm" text-anchor="middle">//go:fix inline</text><rect x="510" y="14" width="230" height="44" rx="5" class="bx"/><text x="625.0" y="33.0" text-anchor="middle" class="th">go vet</text><text x="625.0" y="49.0" text-anchor="middle" class="ts">reports problems</text><line x1="252" y1="98" x2="508" y2="36" class="ln" marker-end="url(#m10a)"/><rect x="510" y="76" width="230" height="44" rx="5" class="bx"/><text x="625.0" y="95.0" text-anchor="middle" class="th">go fix</text><text x="625.0" y="111.0" text-anchor="middle" class="ts">changes the files of the module</text><line x1="252" y1="98" x2="508" y2="98" class="lnb" marker-end="url(#m10b)"/><rect x="510" y="138" width="230" height="44" rx="5" class="bx"/><text x="625.0" y="157.0" text-anchor="middle" class="th">gopls</text><text x="625.0" y="173.0" text-anchor="middle" class="ts">shows each fix in the editor</text><line x1="252" y1="98" x2="508" y2="160" class="ln" marker-end="url(#m10a)"/><text x="380" y="88" class="ts" text-anchor="middle">same analysis</text></svg></div><figcaption>One analyzer, three tools. The <code>go fix</code> command applies the fixes that <code>gopls</code> shows as suggestions.</figcaption></figure><ol><li>Commit your work. A clean tree shows the changes clearly.</li><li>Show the changes without a write operation: <code>go fix -diff ./...</code></li><li>Apply the changes: <code>go fix ./...</code></li><li>Do the tests: <code>go test ./...</code></li><li>Do <code>go fix</code> again. One fix can make a second fix possible.</li></ol><div class="ba"><div class="code before"><div class="ch before"><span>Old idioms</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> larger(a, b int) int {
+	x := a
+	<span class="k">if</span> b &gt; a {
+		x = b
+	}
+	<span class="k">return</span> x
+}
+
+<span class="k">func</span> has(xs []string, want string) bool {
+	<span class="k">for</span> _, x := <span class="k">range</span> xs {
+		<span class="k">if</span> x == want {
+			<span class="k">return</span> true
+		}
+	}
+	<span class="k">return</span> false
+}
+
+<span class="k">func</span> runAll(jobs []<span class="k">func</span>()) {
+	<span class="k">var</span> wg sync.WaitGroup
+	<span class="k">for</span> i := <span class="n">0</span>; i &lt; len(jobs); i++ {
+		wg.Add(<span class="n">1</span>)
+		<span class="k">go</span> <span class="k">func</span>() {
+			<span class="k">defer</span> wg.Done()
+			jobs[i]()
+		}()
+	}
+	wg.Wait()
+}
+
+<span class="k">var</span> cache <span class="k">map</span>[string]<span class="k">interface</span>{}</code></pre></div><div class="code after"><div class="ch after"><span>Result of go fix</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> larger(a, b int) int {
+	x := max(b, a) <span class="c">// minmax</span>
+	<span class="k">return</span> x
+}
+
+<span class="k">func</span> has(xs []string, want string) bool {
+	<span class="k">return</span> slices.Contains(xs, want) <span class="c">// slicescontains</span>
+}
+
+<span class="k">func</span> runAll(jobs []<span class="k">func</span>()) {
+	<span class="k">var</span> wg sync.WaitGroup
+	<span class="k">for</span> i := <span class="k">range</span> jobs { <span class="c">// rangeint</span>
+		wg.Go(<span class="k">func</span>() { <span class="c">// waitgroup</span>
+			jobs[i]()
+		})
+	}
+	wg.Wait()
+}
+
+<span class="k">var</span> cache <span class="k">map</span>[string]any <span class="c">// any</span></code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"sync"</span>
+)
+
+<span class="k">func</span> larger(a, b int) int {
+	x := a
+	<span class="k">if</span> b &gt; a {
+		x = b
+	}
+	<span class="k">return</span> x
+}
+
+<span class="k">func</span> has(xs []string, want string) bool {
+	<span class="k">for</span> _, x := <span class="k">range</span> xs {
+		<span class="k">if</span> x == want {
+			<span class="k">return</span> true
+		}
+	}
+	<span class="k">return</span> false
+}
+
+<span class="k">func</span> runAll(jobs []<span class="k">func</span>()) {
+	<span class="k">var</span> wg sync.WaitGroup
+	<span class="k">for</span> i := 0; i &lt; len(jobs); i++ {
+		wg.Add(1)
+		<span class="k">go</span> <span class="k">func</span>() {
+			<span class="k">defer</span> wg.Done()
+			jobs[i]()
+		}()
+	}
+	wg.Wait()
+}
+
+<span class="k">var</span> cache <span class="k">map</span>[string]<span class="k">interface</span>{}
+
+<span class="k">func</span> main() {
+	fmt.Println(larger(3, 8))
+	fmt.Println(has([]string{<span class="s">"a"</span>, <span class="s">"b"</span>}, <span class="s">"b"</span>))
+	runAll([]<span class="k">func</span>(){<span class="k">func</span>() { fmt.Println(<span class="s">"job done"</span>) }})
+	fmt.Println(len(cache))
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+8
+true
+job done
+0
+$ go fix ./...
+$ go run .
+8
+true
+job done
+0
+$ cat main.go
+package main
+
+import (
+	"fmt"
+	"slices"
+	"sync"
+)
+
+func larger(a, b int) int {
+	x := max(b, a)
+	return x
+}
+
+func has(xs []string, want string) bool {
+	return slices.Contains(xs, want)
+}
+
+func runAll(jobs []func()) {
+	var wg sync.WaitGroup
+	for i := range jobs {
+		wg.Go(func() {
+			jobs[i]()
+		})
+	}
+	wg.Wait()
+}
+
+var cache map[string]any
+
+func main() {
+	fmt.Println(larger(3, 8))
+	fmt.Println(has([]string{"a", "b"}, "b"))
+	runAll([]func(){func() { fmt.Println("job done") }})
+	fmt.Println(len(cache))
+}</code></pre></div><p class="runnote">The program prints the same four lines before and after <code>go fix</code>. The last command shows the file that <code>go fix</code> wrote.</p></details><div class="explain"><h5>What the code does</h5><p>The left block has four pieces of code in an old style. The right block is the result of <code>go fix</code>. The behavior is the same and the code is shorter.</p><p><code>larger</code> returns the larger of two numbers. The tool uses the built-in function <code>max</code>.</p><p><code>has</code> looks for a text value in a list. The tool uses <code>slices.Contains</code>.</p><p><code>runAll</code> starts each job in its own goroutine and waits until all are complete. The tool uses <code>wg.Go</code> and a shorter loop.</p><p><code>interface{}</code> becomes <code>any</code>. The two words have the same meaning: a value of any type.</p><h5>Data structures</h5><ul><li><code>xs []string</code> is a slice of text values.</li><li><code>jobs []func()</code> is a slice of functions that have no inputs and no results.</li><li><code>sync.WaitGroup</code> counts goroutines that are in operation. <code>Add(1)</code> increases the count. <code>Done()</code> decreases it. <code>Wait()</code> stops until the count is zero. <code>wg.Go(f)</code> does <code>Add</code>, starts <code>f</code> in a goroutine, and does <code>Done</code> at the end.</li><li><code>for i := 0; i &lt; len(jobs); i++</code> is a loop with three parts: the start, the condition and the step.</li><li><code>map[string]any</code> is a map: a table that finds a value from a key. Here the keys are text and the values can have any type.</li></ul></div><p><code>minmax</code> does not change each form. For example, it does not change <code>if v &lt; lo { v = lo }</code>.</p><p>The Go 1.27 release notes name four new modernizers: <code>atomictypes</code>, <code>embedlit</code>, <code>slicesbackward</code> and <code>unsafefuncs</code>. Go 1.27.4 also has <code>errorsastype</code>. Go 1.27 gives <code>waitgroup</code> the new name <code>waitgroupgo</code> and removes <code>fmtappendf</code>. To see the list, do <code>go tool fix help</code>.</p><p>New language proposals can now include a modernizer. This is important for AI assistants, because their training data contains old Go code.</p></article><article id="inline"><div class="thead"><span class="n">5.2</span><h3>The source-level inliner</h3><span class="tag v">Go 1.26</span></div><p>A package author can move the callers of a deprecated API automatically. The author adds the comment <code>//go:fix inline</code> to the old function, type or constant.</p><p><code>go fix</code> then replaces each call with the body of the function. It keeps the evaluation sequence, the side effects and the names correct.</p><div class="code "><div class="ch "><span>Package author: add one comment</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> client
+
+<span class="c">// Deprecated: use NewWithTimeout.</span>
+<span class="c">//</span>
+<span class="c">//go:fix inline</span>
+<span class="k">func</span> New(addr string) *Client {
+	<span class="k">return</span> NewWithTimeout(addr, <span class="n">30</span>*time.Second)
+}</code></pre></div><div class="explain"><h5>What the code does</h5><p>The package has an old function, <code>New</code>, and a newer function, <code>NewWithTimeout</code>. <code>New</code> only calls the newer function with a time limit of 30 seconds.</p><p>The comment <code>// Deprecated:</code> tells persons and tools not to use <code>New</code>. The comment <code>//go:fix inline</code> tells <code>go fix</code> to replace each call of <code>New</code> with the body of <code>New</code>.</p><h5>Data structures</h5><ul><li><code>*Client</code> is a pointer to a <code>Client</code> struct. The struct is not shown.</li><li><code>addr string</code> is the address of the server as text.</li><li><code>30*time.Second</code> is a <code>time.Duration</code> of 30 seconds.</li><li><code>//go:fix inline</code> is a directive: a comment with no space after <code>//</code> that a tool reads.</li></ul></div><div class="ba"><div class="code before"><div class="ch before"><span>Caller, before go fix</span><button class="cp" type="button">Copy</button></div><pre><code>c := client.New(<span class="s">"db:5432"</span>)</code></pre></div><div class="code after"><div class="ch after"><span>Caller, after go fix</span><button class="cp" type="button">Copy</button></div><pre><code>c := client.NewWithTimeout(<span class="s">"db:5432"</span>, <span class="n">30</span>*time.Second)</code></pre></div></div><details class="run"><summary>Complete program and output</summary><div class="code "><div class="ch"><span>client/client.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> client
+
+<span class="k">import</span> <span class="s">"time"</span>
+
+<span class="k">type</span> Client <span class="k">struct</span> {
+	Addr    string
+	Timeout time.Duration
+}
+
+<span class="k">func</span> NewWithTimeout(addr string, d time.Duration) *Client {
+	<span class="k">return</span> &amp;Client{Addr: addr, Timeout: d}
+}
+
+<span class="c">// Deprecated: use NewWithTimeout.</span>
+<span class="c">//</span>
+<span class="c">//go:fix inline</span>
+<span class="k">func</span> New(addr string) *Client {
+	<span class="k">return</span> NewWithTimeout(addr, 30*time.Second)
+}
+</code></pre></div><div class="code "><div class="ch"><span>main.go · needs Go 1.26 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+
+	<span class="s">"go17/client"</span>
+)
+
+<span class="k">func</span> main() {
+	c := client.New(<span class="s">"db:5432"</span>)
+	fmt.Println(c.Addr, c.Timeout)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+db:5432 30s
+$ go fix ./...
+$ go run .
+db:5432 30s
+$ cat main.go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"go17/client"
+)
+
+func main() {
+	c := client.NewWithTimeout("db:5432", 30*time.Second)
+	fmt.Println(c.Addr, c.Timeout)
+}</code></pre></div><p class="runnote">Put <code>client.go</code> in a directory with the name <code>client</code>. The module name must be <code>go17</code>, as in "Prepare a work area". The program prints the same line before and after <code>go fix</code>.</p></details><div class="explain"><h5>What the code does</h5><p>These two blocks show one line in the code of a caller, before and after <code>go fix</code>.</p><p>The tool replaced the call with the body of <code>New</code>. It put the argument <code>"db:5432"</code> in the position of <code>addr</code>. It also added the import of the package <code>time</code>. The program does the same work as before.</p><h5>Data structures</h5><ul><li><code>c</code> is a pointer to a <code>client.Client</code>: the object that the program uses to speak to the database server at <code>db:5432</code>.</li></ul></div><p class="note note"><b>NOTE</b> The standard library uses the same directive. For example, calls to <code>ioutil.ReadFile</code> become <code>os.ReadFile</code>.</p></article><article id="gopls"><div class="thead"><span class="n">5.3</span><h3>gopls</h3><span class="tag v">v0.21 to v0.24</span></div><p><code>gopls</code> had four releases. The largest change is interactive refactoring. This is an open extension of the Language Server Protocol. The Go team and the Dart team made it together.</p><p>With this extension a refactoring can ask you questions in more than one step.</p><div class="tw"><table><thead><tr><th>Task</th><th>Before</th><th>Now</th></tr></thead><tbody><tr><td>Add or remove struct tags</td><td>Fixed result, or manual edit</td><td>A dialog lets you select the tags and the name style</td></tr><tr><td>Implement an interface</td><td>Write the method stubs by hand, or use an external tool</td><td>Live search for the interface. Generic interfaces work.</td></tr><tr><td>Move a declaration to a different package</td><td>Cut, paste, correct the imports</td><td>One refactoring</td></tr><tr><td>Rename a package</td><td>Limited to one directory</td><td>Works across directories</td></tr><tr><td>Edit Go assembly files</td><td>Configuration necessary</td><td>No configuration</td></tr><tr><td>Examine a part of an expression</td><td>Hover showed the full expression</td><td>Hover shows the subexpression</td></tr><tr><td>Promoted fields</td><td>No help</td><td>Completions and inlay hints</td></tr><tr><td>Vulnerabilities</td><td>You start <code>govulncheck</code></td><td>Automatic scan when <code>go.mod</code> dependencies change</td></tr></tbody></table></div><p><code>gopls</code> also has a built-in Model Context Protocol (MCP) server. An AI assistant uses it to ask <code>gopls</code> about your workspace. Work on this server continues.</p><div class="code "><div class="ch"><span>shell</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># Get the current gopls.</span>
+go install golang.org/x/tools/gopls@latest
+gopls version</code></pre></div><div class="explain"><h5>What the code does</h5><p><code>gopls</code> is the program that gives your editor its knowledge of Go: completions, error marks and refactoring. The first command downloads the newest version, builds it and installs it. The second command prints the version.</p></div></article><article id="pkgsite"><div class="thead"><span class="n">5.4</span><h3>pkg.go.dev API and go doc</h3><span class="tag ">May 2026</span><span class="tag v">Go 1.27</span></div><p><code>pkg.go.dev</code> now has an official API. It gives module versions, package symbols, importers and vulnerability data.</p><p>Tools and AI agents can read correct package data. They do not parse HTML pages.</p><p><code>go doc</code> in Go 1.27 shows the documentation of a specified package version.</p><div class="ba"><div class="code before"><div class="ch before"><span>Before Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># Only the version in your go.mod or the standard library.</span>
+go doc golang.org/x/sync/errgroup
+
+<span class="c"># For a different version: open pkg.go.dev in a browser,</span>
+<span class="c"># or download the module first.</span></code></pre></div><div class="code after"><div class="ch after"><span>Go 1.27</span><button class="cp" type="button">Copy</button></div><pre><code><span class="c"># A specified version, from the command line.</span>
+go doc golang.org/x/sync/errgroup@v0.10.0
+
+<span class="c"># List the examples of a package, then print one.</span>
+go doc -ex bytes
+go doc bytes.ExampleBuffer</code></pre></div></div><div class="explain"><h5>What the code does</h5><p><code>go doc</code> prints the documentation of a package or of one name in the terminal.</p><p><code>golang.org/x/sync/errgroup</code> is a package in a module. A module is a set of packages with one version number. In Go 1.27 you can add <code>@v0.10.0</code> to select a version.</p><p><code>go doc -ex bytes</code> adds the list of examples of the package <code>bytes</code>. <code>go doc bytes.ExampleBuffer</code> prints the source code of one example.</p></div></article></section><section class="part" id="ahead"><div class="parthead"><span class="n">6</span><div><h2>Plans for the next year</h2><p>These items are plans. They can change before a release.</p></div></div><article id="next-lang"><div class="thead"><span class="n">6.1</span><h3>Language and library</h3><span class="tag v">Go 1.28</span><span class="tag x">Proposal</span></div><p><b>Composite literals without the redundant type.</b> Go 1.28 plans to let you omit the type when the context gives it (issue 12854).</p><p>The code that follows is an illustration of the idea. It is not the final syntax.</p><div class="ba"><div class="code before"><div class="ch before"><span>Today</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> drawLine(from, to Point) { /* ... */ }
+
+drawLine(Point{<span class="n">0</span>, <span class="n">0</span>}, Point{<span class="n">10</span>, <span class="n">10</span>})</code></pre></div><div class="code after"><div class="ch after"><span>Idea for Go 1.28</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">func</span> drawLine(from, to Point) { /* ... */ }
+
+<span class="c">// Illustration only. The parameter type gives Point.</span>
+drawLine({<span class="n">0</span>, <span class="n">0</span>}, {<span class="n">10</span>, <span class="n">10</span>})</code></pre></div></div><div class="explain"><h5>What the code does</h5><p><code>drawLine</code> accepts two points. The call draws a line from the point (0, 0) to the point (10, 10).</p><p>Today you write the type name <code>Point</code> before each pair of braces. The idea for Go 1.28 is to omit the name, because the function declaration already gives the type. The second block does not compile in Go 1.26 or Go 1.27.</p><h5>Data structures</h5><ul><li><code>Point</code> is a struct with two number fields, for example <code>X</code> and <code>Y</code>. It is not shown.</li><li><code>Point{0, 0}</code> is a composite literal. It makes a struct value and gives the field values in sequence.</li></ul></div><p><b>Generic collections.</b> Sets, ordered maps and more are accepted proposals (issue 80590). They go into <code>golang.org/x/exp</code> first. Later they can go into the standard library.</p></article><article id="next-rest"><div class="thead"><span class="n">6.2</span><h3>Runtime, toolchain and community</h3><span class="tag x">Plan</span></div><div class="tw"><table><thead><tr><th>Area</th><th>Plan</th></tr></thead><tbody><tr><td>SIMD</td><td>Go 1.28: graduate a large subset of <code>simd</code> and <code>simd/archsimd</code> for <code>amd64</code>, <code>arm64</code> NEON and <code>wasm</code>. Go 1.29: <code>arm64</code> scalable vectors (SVE).</td></tr><tr><td>Memory</td><td>Decrease the memory footprint of Go programs. This is a high priority because of the global RAM shortage.</td></tr><tr><td>Build speed</td><td>Go 1.28: write compiler export data earlier, for more parallel builds (issue 15734).</td></tr><tr><td>Static analysis</td><td>Go 1.28: separate the export data for tools from the compiler (issue 79427). Let teams add their own analyzers (issue 82464).</td></tr><tr><td>cgo</td><td>Builds without a C toolchain (issue 81450).</td></tr><tr><td>WebAssembly</td><td>Evaluate the stack-switching extension. Early results show better speed and smaller binaries.</td></tr><tr><td>pkg.go.dev</td><td>More signals for package health and quality, on the site and in the API.</td></tr><tr><td>Proposal process</td><td>New structure for more throughput and visibility. The community gets a formal role in triage and review (issue 80580).</td></tr><tr><td>Contributors</td><td>A contributor ladder with more autonomy. Maintainer summits open to trusted contributors.</td></tr></tbody></table></div></article></section><section class="part" id="upgrade"><div class="parthead"><span class="n">7</span><div><h2>Upgrade checklist</h2><p>One sequence for the upgrade to Go 1.27, and the switches that bring back an old behavior.</p></div></div><article id="upgrade-steps"><div class="thead"><span class="n">7.1</span><h3>Procedure</h3><span class="tag v">Go 1.27</span></div><p>Do the steps in this sequence. Each step refers to the section that gives the details.</p><ol><li>Install Go 1.27 or later. Make sure with <code>go version</code>.</li><li>Set the language version of the module: <code>go mod edit -go=1.27</code>. The new language features of section 1 need this line. With <code>go 1.26</code> in <code>go.mod</code>, the Go 1.27 compiler rejects them.</li><li>Build and examine the code: <code>go build ./... &amp;&amp; go vet ./...</code></li><li>Do the tests: <code>go test ./...</code>. If a test compares exact output, look at these three causes first: the text of JSON errors (section 2.1), compressed bytes (section 2.7) and JPEG data (section 2.7).</li><li>Find tests that give a fixed random reader to a crypto function. Change them to <code>cryptotest.SetGlobalRandom</code> (section 4.4).</li><li>Show the modernizer changes with <code>go fix -diff ./...</code>. Apply them with <code>go fix ./...</code>. Do the tests again (section 5.1).</li><li>Examine the code for known vulnerabilities: <code>govulncheck ./...</code> (section 4.6).</li><li>Measure. Do your benchmarks with <code>go test -bench=. -benchmem</code> and compare with the values before the upgrade (sections 3.1 and 3.3).</li><li>If a step fails, use one switch from section 7.2 to find the cause. Remove the switch when the cause is corrected.</li></ol></article><article id="switches"><div class="thead"><span class="n">7.2</span><h3>Switches that bring back an old behavior</h3><span class="tag v">Go 1.26</span><span class="tag v">Go 1.27</span></div><p>There are three types of switch. You set <code>GOEXPERIMENT</code> when you build the program. You set <code>GODEBUG</code> when you start the program. A <code>-gcflags</code> value is an argument of <code>go build</code>.</p><p>All these switches are temporary. Use them to find a problem, not as a permanent setting.</p><div class="tw"><table><thead><tr><th>Switch</th><th>Old behavior that comes back</th><th>Section</th><th>Result of the check for this guide</th></tr></thead><tbody><tr><td><code>GOEXPERIMENT=nojsonv2</code></td><td>The old engine of <code>encoding/json</code></td><td>2.1</td><td>Go 1.27.4 built and ran the version 1 example.</td></tr><tr><td><code>GOEXPERIMENT=nogreenteagc</code></td><td>The garbage collector from before Green Tea</td><td>3.1</td><td>Go 1.26.6 and Go 1.27.4 accepted the setting. The check did not confirm which collector the program used.</td></tr><tr><td><code>GOEXPERIMENT=nosizespecializedmalloc</code></td><td>The general allocator for small objects. The release notes expect the removal of this switch in Go 1.28.</td><td>3.4</td><td>Go 1.27.4 built and ran a program.</td></tr><tr><td><code>-gcflags=all=-d=variablemakehash=n</code></td><td>No slice backing stores on the stack</td><td>3.3</td><td>The slice in the example needed 4 allocations with the switch and 1 without it.</td></tr><tr><td><code>GODEBUG=tlssecpmlkem=0</code></td><td>No <code>SecP256r1MLKEM768</code> and no <code>SecP384r1MLKEM1024</code> in TLS</td><td>4.1</td><td>The program ran. Two Go programs continued to use <code>X25519MLKEM768</code>.</td></tr><tr><td><code>GODEBUG=tlsmlkem=0</code></td><td>No <code>X25519MLKEM768</code> in TLS</td><td>4.1</td><td>The connection used <code>X25519</code>.</td></tr><tr><td><code>GODEBUG=cryptocustomrand=1</code></td><td>Crypto functions use the random reader that you give</td><td>4.4</td><td>A fixed reader gave the same key two times. Without the switch the keys were different.</td></tr></tbody></table></div></article></section><section class="part" id="more"><div class="parthead"><span class="n">8</span><div><h2>More changes in Go 1.27</h2><p>These changes are in the Go 1.27 release notes. They are not in the birthday post.</p></div></div><article id="more-lib"><div class="thead"><span class="n">8.1</span><h3>Small additions to the standard library</h3><span class="tag v">Go 1.27</span></div><p>The example shows two of the additions. The list below it gives more.</p><div class="code "><div class="ch"><span>main.go · needs Go 1.27 or later</span><button class="cp" type="button">Copy</button></div><pre><code><span class="k">package</span> main
+
+<span class="k">import</span> (
+	<span class="s">"fmt"</span>
+	<span class="s">"net/url"</span>
+	<span class="s">"strings"</span>
+)
+
+<span class="k">func</span> main() {
+	<span class="c">// strings.CutLast divides text at the LAST separator.</span>
+	dir, file, found := strings.CutLast(<span class="s">"/var/log/app/server.log"</span>, <span class="s">"/"</span>)
+	fmt.Println(dir, file, found)
+
+	<span class="c">// URL.Clone makes a full copy. A change to the copy</span>
+	<span class="c">// does not change the original.</span>
+	u, _ := url.Parse(<span class="s">"https://example.com/search?q=go"</span>)
+	c := u.Clone()
+	c.Path = <span class="s">"/docs"</span>
+	fmt.Println(u)
+	fmt.Println(c)
+}
+</code></pre></div><div class="code out"><div class="ch"><span>Terminal · recorded with Go 1.27.4</span></div><pre><code>$ go run .
+/var/log/app server.log true
+https://example.com/search?q=go
+https://example.com/docs?q=go</code></pre></div><div class="explain"><h5>What the code does</h5><p>The first part divides a file path into the directory and the file name. <code>strings.CutLast</code> looks for the last <code>/</code>. It returns the text before it, the text after it, and true because it found the separator. The older function <code>strings.Cut</code> uses the first separator.</p><p>The second part reads a web address into a <code>URL</code> value and makes a copy with <code>Clone</code>. The program changes the path of the copy. The output shows that the original did not change.</p><h5>Data structures</h5><ul><li><code>dir</code>, <code>file</code> and <code>found</code> are three results of one function call. Go functions can return more than one value.</li><li><code>u</code> is a pointer to a <code>url.URL</code>: a struct with the parts of a web address, for example <code>Scheme</code>, <code>Host</code>, <code>Path</code> and <code>RawQuery</code>.</li><li><code>c</code> is a pointer to a second, independent <code>url.URL</code>. If you write <code>c := u</code>, the two names point to the same struct, and a change through <code>c</code> also changes <code>u</code>. <code>Clone</code> prevents that.</li><li><code>u, _ :=</code> discards the error result of <code>url.Parse</code>. In a real program, examine the error.</li></ul></div><ul><li><code>bytes.CutLast</code> does the same as <code>strings.CutLast</code> for slices of bytes.</li><li><code>url.Values.Clone</code> makes a full copy of a set of query parameters.</li><li><code>synctest.Sleep</code> in <code>testing/synctest</code> does a sleep and then waits until the other goroutines of the bubble are blocked.</li><li><code>hash/maphash</code> has the new interfaces <code>Hasher</code> and <code>ComparableHasher</code>. They are the base for the generic collections of section 6.1.</li><li><code>math/big</code> has <code>Int.Divide</code>. It returns the quotient and the remainder with a rounding mode that you select.</li><li><code>database/sql</code> has <code>ConvertAssign</code>. Drivers can use the conversions of <code>Rows.Scan</code>.</li><li><code>crypto/tls</code> accepts <code>MLKEM1024</code> in <code>Config.CurvePreferences</code>. <code>Config.Rand</code> is deprecated. Use <code>cryptotest.SetGlobalRandom</code> in tests.</li><li><code>net/http</code> has <code>Server.MaxHeaderValueCount</code>. The HTTP/2 server obeys the priorities that the client sends. <code>Server.DisableClientPriority</code> stops this.</li><li>The package <code>unicode</code> uses Unicode 17.</li></ul><p class="note note"><b>NOTE</b> Only the example was run for this guide. The items in the list come from the release notes.</p></article><article id="more-tools"><div class="thead"><span class="n">8.2</span><h3>Tools, runtime and platforms</h3><span class="tag v">Go 1.27</span></div><div class="tw"><table><thead><tr><th>Area</th><th>Change</th><th>What you do</th></tr></thead><tbody><tr><td><code>go mod tidy</code></td><td>For a module with <code>go 1.27</code> or later, it merges duplicate <code>require</code> blocks. The result has a maximum of two blocks: direct and indirect dependencies.</td><td>Expect one change in <code>go.mod</code>. Commit it.</td></tr><tr><td><code>go test</code></td><td>It runs the <code>stdversion</code> check of <code>go vet</code>. The check finds standard library names that are newer than the <code>go</code> version of the file.</td><td>Increase the <code>go</code> version, or do not use the newer name.</td></tr><tr><td><code>go vet</code></td><td>The <code>printf</code> check reports <code>fmt.Errorf</code> with <code>%w</code> and a pointer <code>*E</code> when <code>E</code> implements <code>error</code>. Such an error does not match in <code>errors.Is</code>.</td><td>Give the value, not the pointer. This check was run for this guide and gave the report.</td></tr><tr><td><code>gofmt</code></td><td>The column alignment is now the same on all CPU architectures.</td><td>Do <code>gofmt</code> one time. Small space changes are possible.</td></tr><tr><td><code>go tool trace</code></td><td><code>-http=:port</code> listens only on localhost.</td><td>For all interfaces, give an address: <code>-http=0.0.0.0:6060</code>.</td></tr><tr><td>Tracebacks</td><td>For a module with <code>go 1.27</code> or later, the first line of each goroutine in a traceback includes its <code>runtime/pprof</code> labels.</td><td><code>GODEBUG=tracebacklabels=0</code> stops this. A short test for this guide did not show the labels, thus this item is not confirmed.</td></tr><tr><td>Timers</td><td>The setting <code>asynctimerchan</code> is removed. The channels of <code>time</code> are always unbuffered.</td><td>Remove the setting from <code>go.mod</code> and from <code>//go:debug</code> lines.</td></tr><tr><td>TLS settings</td><td>These <code>GODEBUG</code> settings are removed: <code>tlsunsafeekm</code>, <code>tlsrsakex</code>, <code>tls3des</code>, <code>tls10server</code> and <code>x509keypairleaf</code>.</td><td>Remove them. The new behavior is permanent.</td></tr><tr><td>Function literals</td><td>Two function literals that are the same can use the same code.</td><td>Do not compare function pointers.</td></tr><tr><td>Version control</td><td>The <code>go</code> command does not get modules from Bazaar (<code>bzr</code>) servers.</td><td>Move such modules to a different host or use a module proxy.</td></tr><tr><td>macOS</td><td>Go 1.27 needs macOS 13 or later.</td><td>Upgrade build computers that have an older macOS.</td></tr><tr><td><code>linux/ppc64</code></td><td>Binaries use the ELFv2 ABI. They need Linux kernel 3.13 or later.</td><td>Make sure that C libraries are ELFv2.</td></tr></tbody></table></div></article></section><section class="part" id="credits"><div class="parthead"><span class="n">9</span><div><h2>Credits</h2><p>The persons and teams that the birthday post names.</p></div></div><article id="credits-list"><div class="tw"><table><thead><tr><th>Work</th><th>Credit</th></tr></thead><tbody><tr><td>The birthday post</td><td>Austin Clements, for the Go team</td></tr><tr><td><code>encoding/json/v2</code> and <code>jsontext</code></td><td>Joe Tsai, Daniel Martí and the Go community</td></tr><tr><td>Goroutine leak profile</td><td>Vlad Saioc and the Programming Systems team of Uber. The method comes from research at Aarhus University and Washington University in St. Louis.</td></tr><tr><td>Interactive refactoring in the Language Server Protocol</td><td>The Go team and the Dart team</td></tr></tbody></table></div></article></section><footer><p>Sources: <a href="https://go.dev/blog/17years">Go blog, 17th birthday post</a>, <a href="https://go.dev/doc/go1.26">Go 1.26 release notes</a>,
+<a href="https://go.dev/doc/go1.27">Go 1.27 release notes</a>, and the package documentation on <a href="https://pkg.go.dev/std">pkg.go.dev</a>.
+The performance values are the values that these sources give. Measure your own programs.</p></footer></main>
+</div><script>
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.cp'); if(!b) return;
+  var t=b.closest('.code').querySelector('code').innerText;
+  try{navigator.clipboard.writeText(t).then(function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)},
+    function(){b.textContent='Select the text'})}catch(_){b.textContent='Select the text'}
+});
+</script></body></html>

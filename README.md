@@ -23,6 +23,10 @@ Technical guides and reference notes.
 - [Secure file exchange with SFTP and OpenPGP](docs/secure-file-transfer-sftp-openpgp.md)
 - [Eight keys, 256 guesses: the eMudhra weak CA keys (illustrated incident explainer)](docs/emudhra-weak-ca-keys.html)
 
+## Go
+
+- [Go at 17: one year of changes in Go 1.26 and Go 1.27, in code (field guide for beginners)](docs/go-at-17-field-guide.html)
+
 ## Terminal and tools
 
 - [tmux](docs/tmux.md)
